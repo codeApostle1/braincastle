@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.status === 'online') {
         serverStatus.innerHTML = `
           <span class="status-dot"></span>
-          <span>Online &bull; SQLite Connected</span>
+          <span>Online &bull; Database Connected</span>
         `;
       }
 
