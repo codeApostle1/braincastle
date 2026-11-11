@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span>📝 <strong>${col.question_count}</strong> questions</span>
             <span title="Unique people/devices who opened this collection">👁️ <strong>${Number(col.view_count || 0)}</strong> views</span>
             <span title="Total times the Start Quiz button was used">▶️ <strong>${Number(col.play_count || 0)}</strong> plays</span>
+            <span title="Reader feedback">💬 <strong>${Number(col.comment_count || 0)}</strong> comments</span>
             <span>📅 ${Utils.formatDate(col.created_at)}</span>
           </div>
         </div>
@@ -196,6 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="btn btn-outline btn-sm btn-toggle-publish" data-id="${col.id}" title="${isLive ? 'Unpublish quiz' : 'Publish quiz'}">
             ${isLive ? 'Unpublish' : 'Publish'}
           </button>
+          <button class="btn btn-secondary btn-sm btn-view-comments" data-id="${col.id}">💬 Comments</button>
           <button class="btn btn-secondary btn-sm btn-edit-col" data-id="${col.id}">
             ⚙ Edit
           </button>
