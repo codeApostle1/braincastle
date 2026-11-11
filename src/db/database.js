@@ -101,6 +101,25 @@ async function initDatabase() {
       );
       CREATE INDEX IF NOT EXISTS idx_collection_views_collection ON collection_views(collection_id);
       CREATE INDEX IF NOT EXISTS idx_quiz_starts_collection ON quiz_collection_starts(collection_id);
+      CREATE TABLE IF NOT EXISTS collection_comments (
+        id BIGSERIAL PRIMARY KEY,
+        collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+        user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+        display_name TEXT NOT NULL,
+        anonymous_code TEXT,
+        comment_text TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_collection_comments_collection ON collection_comments(collection_id, created_at DESC);
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL UNIQUE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_attempts_collection ON quiz_attempts(collection_id);
       CREATE INDEX IF NOT EXISTS idx_attempt_answers_attempt ON quiz_attempt_answers(attempt_id);
     `).catch(error => { schemaPromise = null; throw error; });

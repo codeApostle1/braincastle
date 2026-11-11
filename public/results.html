@@ -106,6 +106,20 @@
       </div>
     </section>
 
+    <section class="review-section" id="quizFeedbackSection" style="margin-top:var(--space-8);">
+      <div class="review-card">
+        <h2 style="font-size:var(--font-size-lg);margin-bottom:var(--space-2);">💬 Share your experience</h2>
+        <p style="color:var(--color-text-secondary);font-size:var(--font-size-sm);margin-bottom:var(--space-4);">How was this quiz? Your feedback can help the creator and other learners.</p>
+        <form id="quizCommentForm">
+          <label for="quizCommentText" class="form-label">Your comment</label>
+          <textarea id="quizCommentText" class="search-input" rows="4" maxlength="600" minlength="3" required placeholder="Share what you liked or what could be improved..." style="width:100%;resize:vertical;"></textarea>
+          <p id="commentIdentityNote" class="form-help">You can comment as a guest or sign in to show your display name.</p>
+          <button id="submitQuizComment" class="btn btn-primary" type="submit">Post comment</button>
+          <span id="quizCommentFeedback" role="status" style="margin-left:.5rem;font-size:var(--font-size-sm);"></span>
+        </form>
+      </div>
+    </section>
+
     <!-- Answer Review Section -->
     <section class="review-section">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
