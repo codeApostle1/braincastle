@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let selectedCollection = null;
   let selectedTimerMinutes = 5;
+  let currentUserIsRegistered = false;
 
   /**
    * 1. Hamburger Menu Toggle Logic
@@ -85,17 +86,72 @@ document.addEventListener('DOMContentLoaded', () => {
       // Check user session
       const authRes = await API.get('/api/auth/me');
       const creatorLink = document.querySelector('a[href="/login.html"]');
+      currentUserIsRegistered = Boolean(authRes.success && authRes.user);
       if (authRes.success && authRes.user && creatorLink) {
         creatorLink.href = '/admin.html';
         creatorLink.innerHTML = `👑 Creator Studio (${Utils.escapeHTML(authRes.user.name)})`;
       }
+      maybeShowSignupReminder();
     } catch (error) {
+      maybeShowSignupReminder();
       serverStatus.style.backgroundColor = 'var(--color-danger-light)';
       serverStatus.style.color = 'var(--color-danger)';
       serverStatus.innerHTML = `
         <span style="display:inline-block; width:8px; height:8px; background:var(--color-danger); border-radius:50%;"></span>
         <span>Offline</span>
       `;
+    }
+  }
+
+
+  function maybeShowSignupReminder() {
+    if (currentUserIsRegistered || localStorage.getItem('braincastle_signup_never') === '1') return;
+    const now = Date.now();
+    const nextAt = Number(localStorage.getItem('braincastle_signup_next') || 0);
+    if (now < nextAt) return;
+    window.setTimeout(() => {
+      if (currentUserIsRegistered || document.getElementById('signupReminderOverlay')) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'signupReminderOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(15,23,42,.58);display:grid;place-items:center;padding:1rem;';
+      overlay.innerHTML = `
+        <section role="dialog" aria-modal="true" aria-labelledby="signupReminderTitle" style="max-width:430px;width:100%;background:var(--color-bg-surface);color:var(--color-text-main);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+          <div style="font-size:1.8rem;margin-bottom:.5rem;">🏰</div>
+          <h2 id="signupReminderTitle" style="margin:0 0 .5rem;">Enjoying BrainCastle?</h2>
+          <p style="color:var(--color-text-secondary);line-height:1.6;">Create a free account to build and publish your own quiz collections, and share them with others.</p>
+          <a href="/login.html" class="btn btn-primary btn-block" style="margin:.75rem 0;">Create a free account</a>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;">
+            <button type="button" id="signupRemindLater" class="btn btn-secondary btn-sm">Remind me later</button>
+            <button type="button" id="signupRemindNever" class="btn btn-outline btn-sm">Don't remind me again</button>
+          </div>
+        </section>`;
+      document.body.appendChild(overlay);
+      document.getElementById('signupRemindLater').addEventListener('click', () => {
+        localStorage.setItem('braincastle_signup_next', String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+        overlay.remove();
+      });
+      document.getElementById('signupRemindNever').addEventListener('click', () => {
+        localStorage.setItem('braincastle_signup_never', '1');
+        overlay.remove();
+      });
+    }, 12000);
+  }
+
+  function getVisitorKey() {
+    let key = localStorage.getItem('braincastle_visitor_key');
+    if (!key) {
+      key = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() :
+        'bc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+      localStorage.setItem('braincastle_visitor_key', key);
+    }
+    return key;
+  }
+
+  async function recordCollectionView(collectionId) {
+    try {
+      await API.post(`/api/collections/${encodeURIComponent(collectionId)}/view`, { visitorKey: getVisitorKey() });
+    } catch (error) {
+      console.warn('Could not record quiz collection view:', error);
     }
   }
 
@@ -145,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="quiz-card-desc">${Utils.escapeHTML(col.description || 'No description provided.')}</p>
             <div class="quiz-card-meta">
               <span class="meta-item">📝 <strong>${col.question_count}</strong> Questions</span>
+              <span class="meta-item" title="Unique collection views">👁️ <strong>${Number(col.view_count || 0)}</strong> Views</span>
               <span class="meta-item">👤 ${Utils.escapeHTML(col.creator_name || 'codeapostle1')}</span>
             </div>
             <div style="margin-top: var(--space-4);">
@@ -153,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `;
 
-        card.addEventListener('click', () => openQuizModal(col));
+        card.addEventListener('click', () => { recordCollectionView(col.id); openQuizModal(col); });
         quizGrid.appendChild(card);
       });
     } catch (error) {
