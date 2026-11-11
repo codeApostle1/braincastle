@@ -121,7 +121,7 @@ router.post('/reset-password', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [passwordHash, rows[0].user_id]);
     await client.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [rows[0].user_id]);
-    await client.query(\"DELETE FROM user_sessions WHERE sess->>'userId'=$1\", [String(rows[0].user_id)]).catch(() => {});
+    await client.query("DELETE FROM user_sessions WHERE sess->>'userId'=$1", [String(rows[0].user_id)]).catch(() => {});
     await client.query('COMMIT');
     res.json({ success: true, message: 'Your password has been updated. You can now sign in with your new password.' });
   } catch (error) {
