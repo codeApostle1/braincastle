@@ -67,7 +67,11 @@ router.post('/forgot-password', async (req, res) => {
   const generic = 'If an account exists for that email, a password reset link will be sent shortly.';
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();
-    if (!/^[^\s@]+@[^\\s@]+\.[^\\s@]+$/.test(email)) return res.json({ success: true, message: generic });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.json({ success: true, message: generic });
+    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM || !process.env.APP_BASE_URL) {
+      console.error('Password reset email is not configured: set RESEND_API_KEY, EMAIL_FROM, and APP_BASE_URL.');
+      return res.json({ success: true, message: generic });
+    }
     const { rows } = await db.query('SELECT id,email FROM users WHERE email=$1', [email]);
     if (!rows[0]) return res.json({ success: true, message: generic });
     const user = rows[0];
@@ -78,7 +82,7 @@ router.post('/forgot-password', async (req, res) => {
     await db.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [user.id]);
     await db.query("INSERT INTO password_reset_tokens (user_id,token_hash,expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [user.id,tokenHash]);
     const baseUrl = process.env.APP_BASE_URL;
-    const resetUrl = baseUrl.replace(/\\/$/, '') + '/reset-password.html?token=' + rawToken;
+    const resetUrl = baseUrl.replace(/\\/+$/, '') + '/reset-password.html?token=' + rawToken;
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
