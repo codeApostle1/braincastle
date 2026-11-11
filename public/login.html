@@ -93,14 +93,14 @@
   <main class="container">
     <div class="auth-card">
       <div class="auth-tabs">
-        <div class="auth-tab active" id="tabLogin">Sign In</div>
-        <div class="auth-tab" id="tabRegister">Register Creator</div>
+        <div class="auth-tab active" id="tabRegister">Create Account</div>
+        <div class="auth-tab" id="tabLogin">Sign In</div>
       </div>
 
       <div id="authAlert" class="auth-alert"></div>
 
       <!-- Sign In Form -->
-      <form id="loginForm">
+      <form id="loginForm" style="display: none;">
         <div class="form-group">
           <label for="loginEmail" class="form-label">Email Address</label>
           <input 
@@ -108,7 +108,6 @@
             id="loginEmail" 
             class="search-input" 
             style="padding-left: 1rem;" 
-            value="creator@example.com" 
             placeholder="you@example.com" 
             required 
           />
@@ -149,19 +148,20 @@
       </form>
 
       <!-- Registration Form -->
-      <form id="registerForm" style="display: none;">
+      <form id="registerForm">
         <div class="form-group">
-          <label for="regName" class="form-label">Creator / Display Name</label>
+          <label for="regName" class="form-label">Your Name or Display Name</label>
           <input 
             type="text" 
             id="regName" 
             class="search-input" 
             style="padding-left: 1rem;" 
-            placeholder="e.g. codeapostle1" 
+            placeholder="e.g. John Doe" 
             required 
           />
         </div>
 
+        <div class="form-help" style="margin-top:-0.75rem;margin-bottom:var(--space-4);">Enter the name you want people to see, for example, John Doe or your preferred username.</div>
         <div class="form-group">
           <label for="regEmail" class="form-label">Email Address</label>
           <input 
@@ -175,14 +175,14 @@
         </div>
 
         <div class="form-group">
-          <label for="regPassword" class="form-label">Password</label>
+          <label for="regPassword" class="form-label">Create Password</label>
           <div class="password-input-wrap">
             <input 
               type="password" 
               id="regPassword" 
               class="search-input" 
               style="padding-left: 1rem;" 
-              placeholder="At least 6 characters" 
+              placeholder="Create a password (at least 6 characters)" 
               required 
             />
             <button type="button" class="toggle-password-btn" data-target="regPassword" aria-label="Toggle password visibility" title="Show/Hide password">
@@ -218,6 +218,7 @@
           Create Creator Account &rarr;
         </button>
       </form>
+      <p id="authSwitchNote" class="form-help" style="text-align:center;margin-top:var(--space-4);">Already have an account? <button type="button" id="switchToLogin" class="btn btn-outline btn-sm">Sign in</button></p>
     </div>
   </main>
 
