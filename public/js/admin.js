@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   function updateDashboardStats() {
     const total = creatorCollections.length;
-    const live = creatorCollections.filter(c => c.is_published === 1).length;
+    const live = creatorCollections.filter(c => c.is_published === true || c.is_published === 1 || c.is_published === 'true').length;
     const drafts = total - live;
     const totalQ = creatorCollections.reduce((sum, c) => sum + (c.question_count || 0), 0);
 
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const card = document.createElement('article');
       card.className = 'admin-collection-card animate-fade-in';
 
-      const isLive = col.is_published === 1;
+      const isLive = col.is_published === true || col.is_published === 1 || col.is_published === 'true';
       const statusBadge = isLive
         ? `<span class="badge-live">● Live on Public Platform</span>`
         : `<span class="badge-draft">○ Draft (Hidden)</span>`;
