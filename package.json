@@ -1,7 +1,7 @@
 {
   "name": "braincastle",
   "version": "1.0.0",
-  "description": "BrainCastle — A modern, responsive Quiz Application built with HTML, CSS, Vanilla JS, Node.js, Express, and SQLite.",
+  "description": "BrainCastle — a modern quiz application built with Express and Neon PostgreSQL.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,20 +10,21 @@
   "keywords": [
     "quiz",
     "express",
-    "sqlite",
+    "postgresql",
     "vanilla-js"
   ],
   "author": "codeapostle1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/codeapostle1"
+    "url": "https://github.com/codeApostle1/braincastle.git"
   },
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^13.0.3",
     "dotenv": "^18.0.10",
     "express": "^5.3.0",
-    "express-session": "^1.19.0"
+    "express-session": "^1.19.0",
+    "pg": "^8.16.3",
+    "connect-pg-simple": "^10.0.0"
   }
 }
