@@ -15,6 +15,7 @@ router.post('/start', async (req, res) => {
     const collectionResult = await db.query('SELECT id,title,description,cover_image FROM collections WHERE id=$1 AND is_published=TRUE', [collectionId]);
     const collection = collectionResult.rows[0];
     if (!collection) return res.status(404).json({ success: false, error: 'Quiz collection not found or is unpublished.' });
+    await db.query('INSERT INTO quiz_collection_starts (collection_id) VALUES ($1)', [collectionId]);
     const result = await db.query('SELECT id,collection_id,question_text,hint,order_index FROM questions WHERE collection_id=$1 ORDER BY order_index', [collectionId]);
     let questions = result.rows;
     if (!questions.length) return res.status(400).json({ success: false, error: 'This quiz has no questions available yet.' });
