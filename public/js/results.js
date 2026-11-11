@@ -73,6 +73,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let reviewItems = [];
   let currentFilter = 'all';
+  const commentForm = document.getElementById('quizCommentForm');
+  const commentText = document.getElementById('quizCommentText');
+  const commentFeedback = document.getElementById('quizCommentFeedback');
+  const commentSubmit = document.getElementById('submitQuizComment');
+  const identityNote = document.getElementById('commentIdentityNote');
+  let commentCollectionId = collectionId;
 
   if (timedBadge && timer && parseInt(timer, 10) > 0) {
     timedBadge.style.display = 'inline-block';
@@ -91,6 +97,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const res = response.results;
       reviewItems = res.review || [];
+      commentCollectionId = res.collection.id;
+      try {
+        const me = await API.get('/api/auth/me');
+        if (me.user) identityNote.textContent = 'Your comment will appear under your display name: ' + me.user.name + '.';
+        else identityNote.textContent = 'Your comment will appear as Anonymous with a private device code. No account is required.';
+      } catch (e) { identityNote.textContent = 'Your comment will appear as Anonymous with a private device code.'; }
 
       // Update Header Badge
       quizCollectionBadge.textContent = `${res.collection.title} — Attempt #${res.attemptId}`;
@@ -268,6 +280,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentFilter = btn.dataset.filter;
       renderReviewCards();
     });
+  });
+
+
+  commentForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const comment = commentText.value.trim();
+    if (comment.length < 3 || comment.length > 600) { commentFeedback.textContent = 'Please write between 3 and 600 characters.'; return; }
+    commentSubmit.disabled = true;
+    commentFeedback.textContent = 'Posting...';
+    try {
+      await API.post('/api/collections/' + encodeURIComponent(commentCollectionId) + '/comments', { comment });
+      commentText.value = '';
+      commentFeedback.textContent = 'Thank you! Your comment has been posted.';
+    } catch (error) {
+      commentFeedback.textContent = error.message || 'Could not post comment. Please try again.';
+    } finally { commentSubmit.disabled = false; }
   });
 
   /**
