@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('braincastle_donation_never') === '1') return;
     if (Date.now() < Number(localStorage.getItem('braincastle_donation_next') || 0)) return;
     setTimeout(() => {
-      if (document.getElementById('donationReminderOverlay')) return;
+      if (document.getElementById('donationReminderOverlay') || document.getElementById('signupReminderOverlay')) return;
       const overlay = document.createElement('div');
       overlay.id = 'donationReminderOverlay';
       overlay.style.cssText = 'position:fixed;inset:0;z-index:3100;background:rgba(15,23,42,.58);display:grid;place-items:center;padding:1rem;';
