@@ -9,7 +9,8 @@ router.get('/', async (req, res) => {
     const params = search ? [`%${search}%`] : [];
     const { rows } = await db.query(`
       SELECT c.id, c.title, c.description, c.cover_image, c.created_at, u.name AS creator_name,
-        (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count
+        (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count,
+        (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count
       FROM collections c JOIN users u ON u.id = c.user_id
       WHERE c.is_published = TRUE AND ($1::text IS NULL OR c.title ILIKE $1 OR c.description ILIKE $1)
       ORDER BY c.created_at DESC
@@ -25,7 +26,9 @@ router.get('/creator/mine', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(`
       SELECT c.id, c.title, c.description, c.cover_image, c.is_published, c.created_at, c.updated_at,
-        (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count
+        (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count,
+        (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count,
+        (SELECT COUNT(*)::int FROM quiz_collection_starts s WHERE s.collection_id = c.id) AS play_count
       FROM collections c WHERE c.user_id = $1 ORDER BY c.created_at DESC
     `, [req.session.userId]);
     res.json({ success: true, data: rows });
@@ -52,6 +55,27 @@ router.get('/:id/manage', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error loading collection editor:', error);
     res.status(500).json({ success: false, error: 'Failed to load collection for editing.' });
+  }
+});
+
+
+router.post('/:id/view', async (req, res) => {
+  try {
+    const visitorKey = String(req.body?.visitorKey || '').trim().slice(0, 120);
+    if (!visitorKey) return res.status(400).json({ success: false, error: 'Visitor identifier is required.' });
+    const result = await db.query(
+      'SELECT id FROM collections WHERE id=$1 AND is_published=TRUE',
+      [req.params.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ success: false, error: 'Quiz collection not found.' });
+    await db.query(
+      'INSERT INTO collection_views (collection_id, visitor_key) VALUES ($1,$2) ON CONFLICT (collection_id, visitor_key) DO NOTHING',
+      [req.params.id, visitorKey]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error recording collection view:', error);
+    res.status(500).json({ success: false, error: 'Could not record collection view.' });
   }
 });
 
