@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrainCastle — Quiz Results</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body>
+
+  <!-- Navigation Bar with Hamburger -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="nav-brand">
+        <div class="brand-icon">🏰</div>
+        <span>Brain<span style="color: var(--color-primary)">Castle</span></span>
+      </a>
+
+      <!-- Hamburger Menu Toggle Button -->
+      <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open Navigation Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hamburger Slide Drawer Overlay -->
+  <div id="navDrawerOverlay" class="nav-drawer-overlay"></div>
+
+  <!-- Hamburger Navigation Drawer -->
+  <aside id="navDrawer" class="nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+    <div class="nav-drawer-header">
+      <div class="nav-brand" style="font-size: var(--font-size-lg);">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1.1rem;">🏰</div>
+        <span>Brain<span style="color: var(--color-primary)">Castle</span></span>
+      </div>
+      <button id="closeDrawerBtn" class="modal-close-btn" aria-label="Close menu">&times;</button>
+    </div>
+
+    <ul class="nav-drawer-links">
+      <li><a href="/" class="nav-drawer-link">🏠 Home</a></li>
+      <li><a href="/#collections-section" class="nav-drawer-link">📚 All Quizzes</a></li>
+      <li><a href="/login.html" class="nav-drawer-link">🔑 Creator Portal</a></li>
+    </ul>
+
+    <div class="nav-drawer-footer">
+      <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+        Crafted by <a href="https://github.com/codeapostle1" target="_blank" rel="noopener" style="color: var(--color-primary); font-weight: 700; text-decoration: none;">codeapostle1</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Container -->
+  <main class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-10);">
+    
+    <!-- Score Summary Hero Card -->
+    <section class="results-hero-card animate-fade-in">
+      <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap;">
+        <span id="quizCollectionBadge" class="badge" style="background-color: var(--color-primary-light); color: var(--color-primary); font-weight: 700;">
+          Quiz Completed
+        </span>
+        <span id="timedBadge" class="badge" style="display: none; background-color: #fffbeb; color: #b45309; font-weight: 700; border: 1px solid #fde68a;">
+          ⏱ Timed Attempt
+        </span>
+      </div>
+
+      <!-- Animated SVG Score Circle -->
+      <div class="score-circle-wrap">
+        <svg class="score-circle-svg" viewBox="0 0 140 140">
+          <circle class="score-circle-bg" cx="70" cy="70" r="60"></circle>
+          <circle id="scoreCircleMeter" class="score-circle-meter" cx="70" cy="70" r="60"></circle>
+        </svg>
+        <div class="score-text-inner" id="scorePercentDisplay">0%</div>
+      </div>
+
+      <h1 id="resultsFeedbackTitle" class="results-title">Evaluating Your Performance...</h1>
+      <p id="resultsFeedbackDesc" class="results-message">Here is your complete score and performance breakdown.</p>
+
+      <!-- Stat Boxes Grid -->
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span id="statTotal" class="stat-value">0</span>
+          <span class="stat-label">Questions</span>
+        </div>
+        <div class="stat-item">
+          <span id="statCorrect" class="stat-value correct">0</span>
+          <span class="stat-label">Correct</span>
+        </div>
+        <div class="stat-item">
+          <span id="statIncorrect" class="stat-value incorrect">0</span>
+          <span class="stat-label">Incorrect</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap;">
+        <button id="replayQuizBtn" class="btn btn-primary">
+          🔄 Replay Quiz
+        </button>
+        <a href="/" class="btn btn-secondary">
+          🏠 Return to Homepage
+        </a>
+      </div>
+    </section>
+
+    <!-- Answer Review Section -->
+    <section class="review-section">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
+        <h2 style="font-size: var(--font-size-base); font-weight: 700;">Detailed Answer Review</h2>
+        
+        <!-- Filter Tabs -->
+        <div class="review-filter-tabs">
+          <button class="review-tab-btn active" data-filter="all">All (<span id="countAll">0</span>)</button>
+          <button class="review-tab-btn" data-filter="incorrect">Incorrect (<span id="countIncorrect">0</span>)</button>
+          <button class="review-tab-btn" data-filter="correct">Correct (<span id="countCorrect">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- Question Review Cards Container -->
+      <div id="reviewCardsContainer">
+        <!-- Review cards injected dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>BrainCastle &copy; 2026 &bull; Developed by <a href="https://github.com/codeapostle1" target="_blank" rel="noopener" style="color: var(--color-primary); font-weight: 600; text-decoration: none;">codeapostle1</a></p>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/results.js"></script>
+</body>
+</html>

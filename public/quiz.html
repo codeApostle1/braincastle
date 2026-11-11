@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" class="quiz-page">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BrainCastle — Quiz Session</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body class="quiz-player-body">
+
+  <!-- Compact Topbar -->
+  <header class="quiz-topbar">
+    <div class="topbar-content">
+      <div class="quiz-info-header">
+        <a href="/" id="exitQuizBtn" class="btn btn-outline btn-sm" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">&larr; Exit</a>
+        <h2 id="quizTitle" class="quiz-title-text">BrainCastle Quiz</h2>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: var(--space-2);">
+        <!-- Optional Timer Widget -->
+        <div id="timerWidget" class="timer-badge" style="display: none;">
+          <span>⏱</span>
+          <span id="timerCountdown">00:00</span>
+        </div>
+
+        <span id="quizBadge" class="badge" style="background-color: var(--color-primary-light); color: var(--color-primary); font-weight: 700; padding: 0.25rem 0.55rem; border-radius: var(--radius-full); font-size: 0.72rem;">Session</span>
+      </div>
+    </div>
+
+    <!-- Animated Progress Line -->
+    <div class="quiz-progress-bar-wrap">
+      <div id="quizProgressBar" class="quiz-progress-fill"></div>
+    </div>
+  </header>
+
+  <!-- Centered Viewport Wrapper (Fits in middle of screen with zero scroll) -->
+  <main class="quiz-main-viewport">
+
+    <article class="question-viewport-card">
+      
+      <!-- Meta & Counter Row -->
+      <div class="question-meta-row">
+        <span id="questionBadge" class="question-number-badge">QUESTION 1</span>
+        <span id="answeredCounter" class="question-counter-text">0/5 Answered</span>
+      </div>
+
+      <!-- Question Number Dots Navigator (Compact) -->
+      <div id="questionDots" class="question-dots-nav" aria-label="Question Navigator">
+        <!-- Dynamic dots rendered here -->
+      </div>
+
+      <!-- Question Text (Reduced font to fit screen) -->
+      <h1 id="questionText" class="question-text">Loading question...</h1>
+
+      <!-- Options List (Compact & Touch-friendly) -->
+      <div id="optionsList" class="options-list" role="radiogroup" aria-labelledby="questionText">
+        <!-- Dynamic options rendered here -->
+      </div>
+
+      <!-- Compact Optional Hint Drawer -->
+      <div id="hintSection" class="hint-toggle-wrap" style="display: none;">
+        <button id="toggleHintBtn" class="btn btn-outline btn-sm" type="button" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+          💡 View Hint
+        </button>
+        <div id="hintBox" class="hint-box" style="display: none;">
+          <span>💡</span>
+          <div><strong style="color: #92400e;">Hint:</strong> <span id="hintContent"></span></div>
+        </div>
+      </div>
+
+      <!-- Quiz Navigation Controls (Directly visible, no scrolling!) -->
+      <div class="quiz-controls-bar">
+        <button id="prevBtn" class="btn btn-secondary btn-sm" type="button" disabled style="padding: 0.45rem 0.9rem;">
+          &larr; Prev
+        </button>
+
+        <span id="questionProgressText" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-secondary);">
+          Q 1 of 5
+        </span>
+
+        <div style="display: flex; gap: var(--space-2);">
+          <button id="nextBtn" class="btn btn-primary btn-sm" type="button" style="padding: 0.45rem 1rem;">
+            Next &rarr;
+          </button>
+          <button id="submitBtn" class="btn btn-primary btn-sm" style="background-color: var(--color-accent); display: none; padding: 0.45rem 1rem;" type="button">
+            Submit 🏁
+          </button>
+        </div>
+      </div>
+
+    </article>
+  </main>
+
+  <!-- Submit Confirmation Modal -->
+  <div id="submitModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="submitModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="submitModalTitle" class="modal-title">Submit Quiz?</h3>
+        <button id="submitModalClose" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="submitModalSummary" style="font-size: var(--font-size-base); color: var(--color-text-main); margin-bottom: var(--space-3);">
+          You have completed all questions.
+        </p>
+        <div id="unansweredWarning" style="display: none; padding: var(--space-3); background-color: var(--color-danger-light); color: var(--color-danger); border-radius: var(--radius-md); font-size: var(--font-size-sm); margin-bottom: var(--space-3);">
+          ⚠ <strong>Attention:</strong> You still have unanswered questions!
+        </div>
+        <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+          Once submitted, your responses will be evaluated and your detailed score and explanations will be shown.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="submitModalCancel" class="btn btn-secondary">Review Answers</button>
+        <button id="confirmSubmitBtn" class="btn btn-primary" style="background-color: var(--color-accent);">Yes, Submit Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exit Confirmation Modal -->
+  <div id="exitModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Exit BrainCastle Quiz?</h3>
+        <button id="exitModalClose" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+          Are you sure you want to exit? Your progress in this session will not be saved.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelExitBtn" class="btn btn-secondary">Stay</button>
+        <a href="/" class="btn btn-outline" style="border-color: var(--color-danger); color: var(--color-danger);">Exit Quiz</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/quiz.js"></script>
+</body>
+</html>

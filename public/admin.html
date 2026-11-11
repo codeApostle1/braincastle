@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrainCastle — Creator Dashboard</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body style="background-color: var(--color-bg-app);">
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="nav-brand">
+        <div class="brand-icon">🏰</div>
+        <span>Brain<span style="color: var(--color-primary)">Castle</span></span>
+        <span style="font-size: 0.7rem; background: var(--color-primary-light); color: var(--color-primary); padding: 0.2rem 0.5rem; border-radius: var(--radius-full); font-weight: 700; margin-left: var(--space-2);">Creator Studio</span>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: var(--space-3);">
+        <a href="/" class="btn btn-outline btn-sm" target="_blank">🌐 Public Site &nearr;</a>
+        <button id="logoutBtn" class="btn btn-secondary btn-sm">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Container -->
+  <main class="container" style="padding-top: var(--space-6); padding-bottom: var(--space-12);">
+
+    <!-- Welcome & Profile Row -->
+    <div class="admin-welcome-row" style="margin-bottom: var(--space-6);">
+      <div>
+        <h1 class="admin-greeting">Welcome, <span id="creatorNameText">Creator</span>!</h1>
+        <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+          Manage your quiz collections, author questions, adjust publication status, and preview before going live.
+        </p>
+      </div>
+
+      <button id="openCreateCollectionBtn" class="btn btn-primary">
+        ➕ Create New Collection
+      </button>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="admin-stats-grid">
+      <div class="dash-stat-card">
+        <div class="stat-card-icon">📚</div>
+        <div class="stat-card-info">
+          <span id="statTotalCollections" class="stat-card-val">0</span>
+          <span class="stat-card-lbl">My Collections</span>
+        </div>
+      </div>
+
+      <div class="dash-stat-card">
+        <div class="stat-card-icon" style="background-color: var(--color-success-light); color: var(--color-success);">🚀</div>
+        <div class="stat-card-info">
+          <span id="statLiveQuizzes" class="stat-card-val">0</span>
+          <span class="stat-card-lbl">Live on Platform</span>
+        </div>
+      </div>
+
+      <div class="dash-stat-card">
+        <div class="stat-card-icon" style="background-color: #fffbeb; color: #b45309;">📝</div>
+        <div class="stat-card-info">
+          <span id="statDraftQuizzes" class="stat-card-val">0</span>
+          <span class="stat-card-lbl">Draft Quizzes</span>
+        </div>
+      </div>
+
+      <div class="dash-stat-card">
+        <div class="stat-card-icon" style="background-color: var(--color-accent-light); color: var(--color-accent);">❓</div>
+        <div class="stat-card-info">
+          <span id="statTotalQuestions" class="stat-card-val">0</span>
+          <span class="stat-card-lbl">Total Questions</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collections Section -->
+    <section>
+      <div class="admin-action-bar">
+        <h2 style="font-size: var(--font-size-lg); font-weight: 700;">Your Quiz Collections</h2>
+        <input 
+          type="text" 
+          id="adminSearchInput" 
+          class="search-input" 
+          placeholder="Filter collections..." 
+          style="max-width: 280px; padding-left: 1rem;" 
+        />
+      </div>
+
+      <!-- Collections Container -->
+      <div id="adminCollectionsList">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="adminEmptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">📂</div>
+        <h3 class="empty-title">No Collections Yet</h3>
+        <p class="empty-desc">Get started by creating your very first quiz collection!</p>
+        <button id="emptyCreateBtn" class="btn btn-primary" style="margin-top: var(--space-4);">
+          Create Collection
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==============================================================
+       MODALS
+       ============================================================== -->
+
+  <!-- 1. Create / Edit Collection Modal -->
+  <div id="collectionModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="collectionModalTitle" class="modal-title">Create Quiz Collection</h3>
+        <button id="closeCollectionModal" class="modal-close-btn">&times;</button>
+      </div>
+      <form id="collectionForm">
+        <div class="modal-body">
+          <input type="hidden" id="editCollectionId" value="" />
+
+          <div class="form-group">
+            <label for="colTitle" class="form-label">Title *</label>
+            <input type="text" id="colTitle" class="search-input" style="padding-left: 1rem;" placeholder="e.g. Modern CSS Layouts" required />
+          </div>
+
+          <div class="form-group">
+            <label for="colDesc" class="form-label">Description</label>
+            <textarea id="colDesc" class="search-input" rows="3" style="padding: 0.6rem 1rem; resize: vertical;" placeholder="Brief overview of what players will learn..."></textarea>
+          </div>
+
+          <!-- Cover Image: Web URL or Device File -->
+          <div class="form-group">
+            <label for="colCover" class="form-label">Cover Image</label>
+            <div class="cover-upload-box">
+              <div class="cover-input-actions">
+                <input 
+                  type="text" 
+                  id="colCover" 
+                  class="search-input" 
+                  style="padding-left: 0.85rem; flex: 1;" 
+                  placeholder="Paste image URL (or choose device file)..." 
+                />
+                <input type="file" id="colCoverFile" accept="image/*" style="display: none;" />
+                <button type="button" id="browseCoverBtn" class="btn btn-secondary btn-sm" style="white-space: nowrap; flex-shrink: 0;">
+                  📁 Device File
+                </button>
+              </div>
+              <div class="form-help">Enter a web image link or pick a photo from your computer/phone.</div>
+              
+              <!-- Live Image Preview -->
+              <div id="coverPreviewWrap" class="cover-preview-card" style="display: none;">
+                <img id="coverPreviewImg" src="" alt="Cover preview" class="cover-preview-img" />
+                <button type="button" id="removeCoverBtn" class="cover-preview-remove">&times; Remove Image</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="switch-label">
+              <div>
+                <div style="font-weight: 600; font-size: var(--font-size-sm);">Publish to Public Platform</div>
+                <div class="form-help">Make this quiz instantly visible to public visitors</div>
+              </div>
+              <input type="checkbox" id="colPublished" class="switch-input" />
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelCollectionBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="saveCollectionBtn" class="btn btn-primary">Save Collection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Question Manager Modal -->
+  <div id="questionManagerModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="qmModalTitle" class="modal-title">Questions in Collection</h3>
+          <div id="qmModalSubtitle" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: 2px;">Authoring & Editing Mode</div>
+        </div>
+        <button id="closeQmModal" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+        
+        <!-- Toggle button to add question -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+          <span style="font-weight: 700; font-size: var(--font-size-sm);">Existing Questions (<span id="qmQuestionCount">0</span>)</span>
+          <button type="button" id="toggleAddQuestionBtn" class="btn btn-primary btn-sm">
+            ➕ Add Question
+          </button>
+        </div>
+
+        <!-- Question Add/Edit Form Box (Expandable) -->
+        <div id="questionFormBox" style="display: none; background: var(--color-bg-muted); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-5); animation: fadeIn 0.2s ease;">
+          <h4 id="qFormTitle" style="font-size: var(--font-size-sm); font-weight: 800; margin-bottom: var(--space-3); color: var(--color-primary);">
+            New Question
+          </h4>
+
+          <input type="hidden" id="editQuestionId" value="" />
+
+          <div class="form-group">
+            <label class="form-label">Question Text *</label>
+            <textarea id="qText" class="search-input" rows="2" style="padding: 0.5rem 0.8rem; font-size: var(--font-size-sm); resize: vertical;" placeholder="Type the question here..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="display: flex; justify-content: space-between;">
+              <span>Multiple-Choice Options (Select the correct radio) *</span>
+              <span style="font-size: 0.7rem; color: var(--color-success); font-weight: 700;">● Green Radio = Correct</span>
+            </label>
+
+            <!-- Option 1 -->
+            <div class="option-editor-row">
+              <input type="radio" name="correctOption" id="radioOpt1" value="0" class="option-correct-radio" checked title="Mark as correct answer" />
+              <input type="text" id="optText1" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option A (Correct Answer)" required />
+            </div>
+
+            <!-- Option 2 -->
+            <div class="option-editor-row">
+              <input type="radio" name="correctOption" id="radioOpt2" value="1" class="option-correct-radio" title="Mark as correct answer" />
+              <input type="text" id="optText2" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option B" required />
+            </div>
+
+            <!-- Option 3 -->
+            <div class="option-editor-row">
+              <input type="radio" name="correctOption" id="radioOpt3" value="2" class="option-correct-radio" title="Mark as correct answer" />
+              <input type="text" id="optText3" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option C" required />
+            </div>
+
+            <!-- Option 4 -->
+            <div class="option-editor-row">
+              <input type="radio" name="correctOption" id="radioOpt4" value="3" class="option-correct-radio" title="Mark as correct answer" />
+              <input type="text" id="optText4" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option D" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Optional Hint</label>
+            <input type="text" id="qHint" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Helpful hint for players..." />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Optional Explanation / Solution Note</label>
+            <textarea id="qExplanation" class="search-input" rows="2" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs); resize: vertical;" placeholder="Detailed explanation shown on the results page..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: var(--space-2); justify-content: flex-end;">
+            <button type="button" id="cancelQuestionBtn" class="btn btn-secondary btn-sm">Cancel</button>
+            <button type="button" id="saveQuestionBtn" class="btn btn-primary btn-sm">Save Question</button>
+          </div>
+        </div>
+
+        <!-- Questions List Container -->
+        <div id="qmQuestionsContainer" class="q-manager-list">
+          <!-- Question items rendered dynamically -->
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="closeQmFooterBtn" class="btn btn-secondary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Quiz Preview Modal -->
+  <div id="previewModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="previewTitle" class="modal-title">Quiz Preview</h3>
+          <span class="badge" style="background-color: var(--color-primary-light); color: var(--color-primary); font-size: 0.7rem; font-weight: 700;">Creator Preview Mode</span>
+        </div>
+        <button id="closePreviewBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <div id="previewQuestionsContainer">
+          <!-- Question preview items -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="closePreviewFooterBtn" class="btn btn-secondary">Close Preview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete Collection?</h3>
+        <button id="closeDeleteModal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+          Are you sure you want to delete <strong id="deleteTargetTitle" style="color: var(--color-text-main);">this collection</strong>? All its questions, options, and attempt history will be permanently deleted.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
+        <button id="confirmDeleteBtn" class="btn btn-outline" style="border-color: var(--color-danger); color: var(--color-danger);">Delete Collection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

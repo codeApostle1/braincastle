@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrainCastle — Master Knowledge with Interactive Quizzes</title>
+  <meta name="description" content="BrainCastle — A modern, responsive quiz application built with vanilla HTML, CSS, JavaScript, Express, and SQLite.">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+
+  <!-- Navigation Bar with Non-Squeezed Hamburger Menu -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="nav-brand">
+        <div class="brand-icon">🏰</div>
+        <span>Brain<span style="color: var(--color-primary)">Castle</span></span>
+      </a>
+
+      <!-- Hamburger Menu Toggle Button -->
+      <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open Navigation Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hamburger Slide Drawer Overlay -->
+  <div id="navDrawerOverlay" class="nav-drawer-overlay"></div>
+
+  <!-- Hamburger Navigation Drawer -->
+  <aside id="navDrawer" class="nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+    <div class="nav-drawer-header">
+      <div class="nav-brand" style="font-size: var(--font-size-lg);">
+        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1.1rem;">🏰</div>
+        <span>Brain<span style="color: var(--color-primary)">Castle</span></span>
+      </div>
+      <button id="closeDrawerBtn" class="modal-close-btn" aria-label="Close menu">&times;</button>
+    </div>
+
+    <ul class="nav-drawer-links">
+      <li><a href="/" class="nav-drawer-link active">🏠 Home</a></li>
+      <li><a href="#collections-section" class="nav-drawer-link" id="drawerQuizzesLink">📚 All Quizzes</a></li>
+      <li><a href="/login.html" class="nav-drawer-link">🔑 Creator Portal</a></li>
+    </ul>
+
+    <div class="nav-drawer-footer">
+      <div>
+        <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: var(--space-2);">
+          System Status
+        </div>
+        <div id="serverStatus" class="status-pill">
+          <span class="status-dot"></span>
+          <span>Connecting...</span>
+        </div>
+      </div>
+
+      <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+        Crafted by <a href="https://github.com/codeapostle1" target="_blank" rel="noopener" style="color: var(--color-primary); font-weight: 700; text-decoration: none;">Joel</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-tag">✨ Welcome to BrainCastle</div>
+      <h1 class="hero-title">
+        Fortify Your Mind at <span class="gradient-text">BrainCastle</span>
+      </h1>
+      <p class="hero-subtitle">
+        Explore curated quiz collections, customize your test parameters, challenge yourself with custom timers, and review deep explanations.
+      </p>
+      <a href="#collections-section" class="btn btn-primary btn-lg">Explore Quizzes ↓</a>
+    </div>
+  </section>
+
+  <!-- Main Content Area -->
+  <main class="container" id="collections-section">
+    <!-- Search Bar -->
+    <section class="filter-bar" style="justify-content: center;">
+      <div class="search-wrap" style="max-width: 600px; width: 100%;">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="Search quizzes by title or topic..." 
+          autocomplete="off"
+        />
+      </div>
+    </section>
+
+    <!-- Quiz Grid Section -->
+    <section>
+      <div id="quizGrid" class="quiz-grid">
+        <!-- Dynamic collection cards will be rendered here -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">🏰</div>
+        <h3 class="empty-title">No Quizzes Found</h3>
+        <p class="empty-desc">Try clearing your search query or selecting a different category to view available quizzes.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Quiz Setup & Details Modal -->
+  <div id="quizModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">Quiz Configuration</h3>
+        <button id="modalCloseBtn" class="modal-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p id="modalDesc" style="color: var(--color-text-secondary); margin-bottom: var(--space-4); font-size: var(--font-size-sm);"></p>
+
+        <!-- Question Count Selector -->
+        <div class="form-group">
+          <label for="questionCountRange" class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Number of Questions</span>
+            <strong id="questionCountDisplay" style="color: var(--color-primary); font-size: var(--font-size-base);">5</strong>
+          </label>
+          <input 
+            type="range" 
+            id="questionCountRange" 
+            class="form-range" 
+            min="1" 
+            max="10" 
+            value="5"
+          />
+          <div class="form-help">Select how many questions you want to attempt from this collection.</div>
+        </div>
+
+        <!-- Shuffle Option -->
+        <div class="form-group" style="margin-top: var(--space-3);">
+          <label class="switch-label">
+            <div>
+              <div style="font-weight: 600; font-size: var(--font-size-sm);">Shuffle Question Order</div>
+              <div class="form-help">Randomize questions for a fresh attempt</div>
+            </div>
+            <input type="checkbox" id="shuffleCheckbox" class="switch-input" checked />
+          </label>
+        </div>
+
+        <!-- Timer Option (New Feature) -->
+        <div class="form-group" style="margin-top: var(--space-3);">
+          <label class="switch-label">
+            <div>
+              <div style="font-weight: 600; font-size: var(--font-size-sm);">⏱ Set a Quiz Timer</div>
+              <div class="form-help">Challenge yourself with a countdown timer</div>
+            </div>
+            <input type="checkbox" id="timerCheckbox" class="switch-input" />
+          </label>
+        </div>
+
+        <!-- Timer Configuration Section (Expands when Timer is checked) -->
+        <div id="timerConfigSection" style="display: none; background: var(--color-bg-muted); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-top: var(--space-2); animation: fadeIn 0.2s ease;">
+          <label class="form-label" style="font-size: var(--font-size-xs); text-transform: uppercase;">
+            Timer Duration: <span id="timerDisplayVal" style="color: var(--color-primary); font-weight: 700;">5 Minutes</span>
+          </label>
+          
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); flex-wrap: wrap;">
+            <button type="button" class="timer-preset-btn" data-mins="1">1 min</button>
+            <button type="button" class="timer-preset-btn" data-mins="2">2 mins</button>
+            <button type="button" class="timer-preset-btn active" data-mins="5">5 mins</button>
+            <button type="button" class="timer-preset-btn" data-mins="10">10 mins</button>
+            <button type="button" class="timer-preset-btn" data-mins="15">15 mins</button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap;">Or custom:</span>
+            <input type="number" id="customTimerInput" min="1" max="120" value="5" class="search-input" style="padding: 0.35rem 0.65rem; max-width: 100px; font-size: var(--font-size-xs);" />
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">minutes</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalCancelBtn" class="btn btn-secondary">Cancel</button>
+        <button id="startQuizBtn" class="btn btn-primary">Start Quiz 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>BrainCastle &copy; 2026 &bull; Developed by <a href="https://github.com/codeapostle1" target="_blank" rel="noopener" style="color: var(--color-primary); font-weight: 600; text-decoration: none;">codeapostle1</a> &bull; Built with clean HTML, CSS, Vanilla JS, Express & SQLite.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
