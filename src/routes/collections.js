@@ -10,7 +10,8 @@ router.get('/', async (req, res) => {
     const { rows } = await db.query(`
       SELECT c.id, c.title, c.description, c.cover_image, c.created_at, u.name AS creator_name,
         (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count,
-        (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count
+        (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count,
+        (SELECT COUNT(*)::int FROM collection_comments cm WHERE cm.collection_id = c.id) AS comment_count
       FROM collections c JOIN users u ON u.id = c.user_id
       WHERE c.is_published = TRUE AND ($1::text IS NULL OR c.title ILIKE $1 OR c.description ILIKE $1)
       ORDER BY c.created_at DESC
@@ -76,6 +77,64 @@ router.post('/:id/view', async (req, res) => {
   } catch (error) {
     console.error('Error recording collection view:', error);
     res.status(500).json({ success: false, error: 'Could not record collection view.' });
+  }
+});
+
+
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const { rows: collectionRows } = await db.query('SELECT id FROM collections WHERE id=$1 AND is_published=TRUE', [req.params.id]);
+    if (!collectionRows[0]) return res.status(404).json({ success: false, error: 'Quiz collection not found.' });
+    const { rows } = await db.query(
+      'SELECT id, display_name, comment_text, created_at FROM collection_comments WHERE collection_id=$1 ORDER BY created_at DESC LIMIT 100',
+      [req.params.id]
+    );
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Could not load comments:', error);
+    res.status(500).json({ success: false, error: 'Could not load comments.' });
+  }
+});
+
+router.post('/:id/comments', async (req, res) => {
+  try {
+    const comment = String(req.body?.comment || '').trim();
+    if (comment.length < 3 || comment.length > 600) return res.status(400).json({ success: false, error: 'Comments must be between 3 and 600 characters.' });
+    const { rows: collectionRows } = await db.query('SELECT id FROM collections WHERE id=$1 AND is_published=TRUE', [req.params.id]);
+    if (!collectionRows[0]) return res.status(404).json({ success: false, error: 'Quiz collection not found.' });
+
+    const userId = req.session?.userId || null;
+    let displayName, anonymousCode = null;
+    if (userId) {
+      const { rows } = await db.query('SELECT name FROM users WHERE id=$1', [userId]);
+      if (!rows[0]) return res.status(401).json({ success: false, error: 'Please sign in again.' });
+      displayName = rows[0].name || 'Registered user';
+    } else {
+      if (!req.session.anonymousCommentCode) {
+        const crypto = require('crypto');
+        req.session.anonymousCommentCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+      }
+      anonymousCode = req.session.anonymousCommentCode;
+      displayName = 'Anonymous ' + anonymousCode;
+    }
+
+    const rateKey = userId ? String(userId) : 'anon:' + anonymousCode;
+    const recent = await db.query(
+      `SELECT COUNT(*)::int AS count FROM collection_comments
+       WHERE collection_id=$1 AND created_at > NOW() - INTERVAL '1 hour'
+       AND ((user_id IS NOT NULL AND user_id::text=$2) OR (user_id IS NULL AND anonymous_code=$3))`,
+      [req.params.id, userId ? String(userId) : '', anonymousCode]
+    );
+    if (recent.rows[0].count >= 5) return res.status(429).json({ success: false, error: 'You have reached the comment limit for this quiz. Please try again later.' });
+
+    const { rows } = await db.query(
+      'INSERT INTO collection_comments (collection_id,user_id,display_name,anonymous_code,comment_text) VALUES ($1,$2,$3,$4,$5) RETURNING id,display_name,comment_text,created_at',
+      [req.params.id, userId, displayName, anonymousCode, comment]
+    );
+    res.status(201).json({ success: true, data: rows[0] });
+  } catch (error) {
+    console.error('Could not save comment:', error);
+    res.status(500).json({ success: false, error: 'Could not save your comment.' });
   }
 });
 
