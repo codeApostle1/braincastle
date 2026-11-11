@@ -61,6 +61,76 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+const crypto = require('crypto');
+
+router.post('/forgot-password', async (req, res) => {
+  const generic = 'If an account exists for that email, a password reset link will be sent shortly.';
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.json({ success: true, message: generic });
+    const { rows } = await db.query('SELECT id,email FROM users WHERE email=$1', [email]);
+    if (!rows[0]) return res.json({ success: true, message: generic });
+    const user = rows[0];
+    const recent = await db.query("SELECT COUNT(*)::int AS count FROM password_reset_tokens WHERE user_id=$1 AND created_at > NOW() - INTERVAL '1 hour'", [user.id]);
+    if (recent.rows[0].count >= 3) return res.json({ success: true, message: generic });
+    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+      console.error('Password reset email is not configured: set RESEND_API_KEY and EMAIL_FROM.');
+      return res.status(503).json({ success: false, error: 'Password reset email is not configured yet. Please contact the site administrator.' });
+    }
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    await db.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [user.id]);
+    await db.query("INSERT INTO password_reset_tokens (user_id,token_hash,expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [user.id,tokenHash]);
+    const baseUrl = process.env.APP_BASE_URL || 'https://braincastle.vercel.app';
+    const resetUrl = baseUrl.replace(/\\/$/, '') + '/reset-password.html?token=' + rawToken;
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM,
+        to: [user.email],
+        subject: 'Reset your BrainCastle password',
+        html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto"><h2>Reset your BrainCastle password</h2><p>We received a request to reset your password. This link expires in 30 minutes and can only be used once.</p><p><a href="' + resetUrl + '" style="display:inline-block;padding:12px 20px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px">Create a new password</a></p><p>If you did not request this, you can ignore this email. Your password will remain unchanged.</p></div>'
+      })
+    });
+    if (!emailResponse.ok) {
+      const detail = await emailResponse.text();
+      console.error('Password reset email provider error:', detail.slice(0, 500));
+      return res.status(502).json({ success: false, error: 'We could not send the reset email right now. Please try again later.' });
+    }
+    res.json({ success: true, message: generic });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, error: 'Could not process the password reset request.' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  const token = String(req.body?.token || '');
+  const password = String(req.body?.password || '');
+  if (!/^[a-f0-9]{64}$/i.test(token) || password.length < 10 || password.length > 128) {
+    return res.status(400).json({ success: false, error: 'Use a valid reset link and a password of at least 10 characters.' });
+  }
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const { rows } = await client.query('SELECT id,user_id FROM password_reset_tokens WHERE token_hash=$1 AND used_at IS NULL AND expires_at>NOW() FOR UPDATE', [tokenHash]);
+    if (!rows[0]) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'This reset link is invalid or has expired. Please request a new one.' }); }
+    const passwordHash = await bcrypt.hash(password, 12);
+    await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [passwordHash, rows[0].user_id]);
+    await client.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [rows[0].user_id]);
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Your password has been updated. You can now sign in with your new password.' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, error: 'Could not update your password.' });
+  } finally { client.release(); }
+});
+
+
 router.post('/logout', (req, res) => {
   req.session.destroy(error => {
     if (error) return res.status(500).json({ success: false, error: 'Could not log out' });
