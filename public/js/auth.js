@@ -50,21 +50,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.title = isPassword ? 'Hide password' : 'Show password';
     });
   });
-  tabLogin.addEventListener('click', () => {
+  function showLogin() {
     tabLogin.classList.add('active');
     tabRegister.classList.remove('active');
     loginForm.style.display = 'block';
     registerForm.style.display = 'none';
-    hideAlert();
-  });
+    authAlert.style.display = 'none';
+    authSwitchNote.innerHTML = 'New to BrainCastle? <button type="button" id="switchToRegister" class="btn btn-outline btn-sm">Create an account</button>';
+    document.getElementById('switchToRegister').addEventListener('click', showRegister);
+  }
 
-  tabRegister.addEventListener('click', () => {
+  function showRegister() {
     tabRegister.classList.add('active');
     tabLogin.classList.remove('active');
     registerForm.style.display = 'block';
     loginForm.style.display = 'none';
-    hideAlert();
-  });
+    authAlert.style.display = 'none';
+    authSwitchNote.innerHTML = 'Already have an account? <button type="button" id="switchToLogin" class="btn btn-outline btn-sm">Sign in</button>';
+    document.getElementById('switchToLogin').addEventListener('click', showLogin);
+  }
+
+  const authSwitchNote = document.getElementById('authSwitchNote');
+  tabLogin.addEventListener('click', showLogin);
+  tabRegister.addEventListener('click', showRegister);
+  document.getElementById('switchToLogin').addEventListener('click', showLogin);
 
   function showAlert(msg, isError = true) {
     authAlert.style.display = 'block';
