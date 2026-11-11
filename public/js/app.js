@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(overlay);
       document.getElementById('donationRemindLater').addEventListener('click', () => { localStorage.setItem('braincastle_donation_next', String(Date.now() + 7*24*60*60*1000)); overlay.remove(); });
       document.getElementById('donationRemindNever').addEventListener('click', () => { localStorage.setItem('braincastle_donation_never', '1'); overlay.remove(); });
-    }, 18000);
+    }, 35000);
   }
 
   function getVisitorKey() {
