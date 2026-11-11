@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const router = express.Router();
+const crypto = require('crypto');
 
 router.get('/me', async (req, res) => {
   try {
@@ -62,27 +63,21 @@ router.post('/login', async (req, res) => {
 });
 
 
-const crypto = require('crypto');
-
 router.post('/forgot-password', async (req, res) => {
   const generic = 'If an account exists for that email, a password reset link will be sent shortly.';
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.json({ success: true, message: generic });
+    if (!/^[^\s@]+@[^\\s@]+\.[^\\s@]+$/.test(email)) return res.json({ success: true, message: generic });
     const { rows } = await db.query('SELECT id,email FROM users WHERE email=$1', [email]);
     if (!rows[0]) return res.json({ success: true, message: generic });
     const user = rows[0];
     const recent = await db.query("SELECT COUNT(*)::int AS count FROM password_reset_tokens WHERE user_id=$1 AND created_at > NOW() - INTERVAL '1 hour'", [user.id]);
     if (recent.rows[0].count >= 3) return res.json({ success: true, message: generic });
-    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
-      console.error('Password reset email is not configured: set RESEND_API_KEY and EMAIL_FROM.');
-      return res.status(503).json({ success: false, error: 'Password reset email is not configured yet. Please contact the site administrator.' });
-    }
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     await db.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [user.id]);
     await db.query("INSERT INTO password_reset_tokens (user_id,token_hash,expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [user.id,tokenHash]);
-    const baseUrl = process.env.APP_BASE_URL || 'https://braincastle.vercel.app';
+    const baseUrl = process.env.APP_BASE_URL;
     const resetUrl = baseUrl.replace(/\\/$/, '') + '/reset-password.html?token=' + rawToken;
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -121,6 +116,7 @@ router.post('/reset-password', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [passwordHash, rows[0].user_id]);
     await client.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [rows[0].user_id]);
+    await client.query(\"DELETE FROM user_sessions WHERE sess->>'userId'=$1\", [String(rows[0].user_id)]).catch(() => {});
     await client.query('COMMIT');
     res.json({ success: true, message: 'Your password has been updated. You can now sign in with your new password.' });
   } catch (error) {
