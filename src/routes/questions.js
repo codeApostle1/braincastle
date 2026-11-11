@@ -1,182 +1,84 @@
-/**
- * Question Management Route Handler
- * Allows creators to add, edit, and delete questions and options for their collections
- */
 const express = require('express');
-const router = express.Router();
 const db = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
+const router = express.Router();
 
-/**
- * Helper: Verifies that a question belongs to a collection owned by the user
- */
-function verifyQuestionOwnership(questionId, userId) {
-  const query = `
-    SELECT q.id, q.collection_id
-    FROM questions q
-    JOIN collections c ON c.id = q.collection_id
-    WHERE q.id = ? AND c.user_id = ?
-  `;
-  return db.prepare(query).get(questionId, userId);
+const isCorrect = value => value === true || value === 1 || value === '1';
+function validateQuestion(questionText, options) {
+  if (!questionText?.trim()) return 'Question text is required.';
+  if (!Array.isArray(options) || options.length < 2) return 'At least two options are required.';
+  if (options.some(o => !o.text?.trim())) return 'Every option must contain text.';
+  if (!options.some(o => isCorrect(o.isCorrect))) return 'Please mark one option as the correct answer.';
+  return null;
 }
 
-/**
- * POST /api/questions
- * Adds a new question with multiple-choice options to a collection
- */
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
+  const { collectionId, questionText, hint, explanation, options } = req.body;
+  if (!collectionId) return res.status(400).json({ success: false, error: 'Collection ID is required.' });
+  const validationError = validateQuestion(questionText, options);
+  if (validationError) return res.status(400).json({ success: false, error: validationError });
+  const client = await db.connect();
   try {
-    const { collectionId, questionText, hint, explanation, options } = req.body;
-
-    if (!collectionId) {
-      return res.status(400).json({ success: false, error: 'Collection ID is required.' });
-    }
-
-    // Verify creator ownership of collection
-    const collection = db.prepare('SELECT id FROM collections WHERE id = ? AND user_id = ?').get(collectionId, req.session.userId);
-    if (!collection) {
-      return res.status(403).json({ success: false, error: 'You do not have permission to add questions to this collection.' });
-    }
-
-    if (!questionText || !questionText.trim()) {
-      return res.status(400).json({ success: false, error: 'Question text is required.' });
-    }
-
-    if (!Array.isArray(options) || options.length < 2) {
-      return res.status(400).json({ success: false, error: 'At least two options are required.' });
-    }
-
-    // Validate that at least one option is marked correct
-    const hasCorrect = options.some(o => o.isCorrect === true || o.isCorrect === 1 || o.isCorrect === '1');
-    if (!hasCorrect) {
-      return res.status(400).json({ success: false, error: 'Please mark one option as the correct answer.' });
-    }
-
-    // Insert question and options atomically
-    const insertTransaction = db.transaction(() => {
-      // Find current max order index
-      const maxOrder = db.prepare('SELECT MAX(order_index) as maxOrder FROM questions WHERE collection_id = ?').get(collectionId).maxOrder || 0;
-
-      const insertQ = db.prepare(`
-        INSERT INTO questions (collection_id, question_text, hint, explanation, order_index)
-        VALUES (?, ?, ?, ?, ?)
-      `);
-      const qResult = insertQ.run(collectionId, questionText.trim(), hint ? hint.trim() : null, explanation ? explanation.trim() : null, maxOrder + 1);
-      const questionId = qResult.lastInsertRowid;
-
-      const insertOpt = db.prepare(`
-        INSERT INTO options (question_id, option_text, is_correct, order_index)
-        VALUES (?, ?, ?, ?)
-      `);
-
-      options.forEach((opt, idx) => {
-        const isCorr = (opt.isCorrect === true || opt.isCorrect === 1 || opt.isCorrect === '1') ? 1 : 0;
-        insertOpt.run(questionId, (opt.text || '').trim(), isCorr, idx + 1);
-      });
-
-      return questionId;
-    });
-
-    const questionId = insertTransaction();
-
-    res.status(201).json({
-      success: true,
-      message: 'Question added successfully!',
-      questionId
-    });
-
+    await client.query('BEGIN');
+    const owned = await client.query('SELECT id FROM collections WHERE id=$1 AND user_id=$2 FOR UPDATE', [collectionId, req.session.userId]);
+    if (!owned.rowCount) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'You do not have permission to add questions to this collection.' }); }
+    const order = await client.query('SELECT COALESCE(MAX(order_index),0)+1 AS next FROM questions WHERE collection_id=$1', [collectionId]);
+    const inserted = await client.query(`
+      INSERT INTO questions (collection_id, question_text, hint, explanation, order_index)
+      VALUES ($1,$2,$3,$4,$5) RETURNING id
+    `, [collectionId, questionText.trim(), hint?.trim() || null, explanation?.trim() || null, order.rows[0].next]);
+    const questionId = inserted.rows[0].id;
+    for (let i=0; i<options.length; i++) await client.query(
+      'INSERT INTO options (question_id, option_text, is_correct, order_index) VALUES ($1,$2,$3,$4)',
+      [questionId, options[i].text.trim(), isCorrect(options[i].isCorrect), i+1]
+    );
+    await client.query('COMMIT');
+    res.status(201).json({ success: true, message: 'Question added successfully!', questionId });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error adding question:', error);
     res.status(500).json({ success: false, error: 'Failed to add question.' });
-  }
+  } finally { client.release(); }
 });
 
-/**
- * PUT /api/questions/:id
- * Updates an existing question and its options
- */
-router.put('/:id', requireAuth, (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
+  const { questionText, hint, explanation, options } = req.body;
+  const validationError = validateQuestion(questionText, options);
+  if (validationError) return res.status(400).json({ success: false, error: validationError });
+  const client = await db.connect();
   try {
-    const { id } = req.params;
-    const { questionText, hint, explanation, options } = req.body;
-
-    const owned = verifyQuestionOwnership(id, req.session.userId);
-    if (!owned) {
-      return res.status(403).json({ success: false, error: 'Question not found or access denied.' });
-    }
-
-    if (!questionText || !questionText.trim()) {
-      return res.status(400).json({ success: false, error: 'Question text cannot be empty.' });
-    }
-
-    if (!Array.isArray(options) || options.length < 2) {
-      return res.status(400).json({ success: false, error: 'At least two options are required.' });
-    }
-
-    const hasCorrect = options.some(o => o.isCorrect === true || o.isCorrect === 1 || o.isCorrect === '1');
-    if (!hasCorrect) {
-      return res.status(400).json({ success: false, error: 'Please mark one option as the correct answer.' });
-    }
-
-    const updateTransaction = db.transaction(() => {
-      // Update question text, hint, explanation
-      db.prepare(`
-        UPDATE questions
-        SET question_text = ?, hint = ?, explanation = ?
-        WHERE id = ?
-      `).run(questionText.trim(), hint ? hint.trim() : null, explanation ? explanation.trim() : null, id);
-
-      // Recreate options cleanly
-      db.prepare('DELETE FROM options WHERE question_id = ?').run(id);
-
-      const insertOpt = db.prepare(`
-        INSERT INTO options (question_id, option_text, is_correct, order_index)
-        VALUES (?, ?, ?, ?)
-      `);
-
-      options.forEach((opt, idx) => {
-        const isCorr = (opt.isCorrect === true || opt.isCorrect === 1 || opt.isCorrect === '1') ? 1 : 0;
-        insertOpt.run(id, (opt.text || '').trim(), isCorr, idx + 1);
-      });
-    });
-
-    updateTransaction();
-
-    res.json({
-      success: true,
-      message: 'Question updated successfully!'
-    });
-
+    await client.query('BEGIN');
+    const owned = await client.query(`
+      SELECT q.id FROM questions q JOIN collections c ON c.id=q.collection_id
+      WHERE q.id=$1 AND c.user_id=$2 FOR UPDATE OF q
+    `, [req.params.id, req.session.userId]);
+    if (!owned.rowCount) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'Question not found or access denied.' }); }
+    await client.query('UPDATE questions SET question_text=$1, hint=$2, explanation=$3 WHERE id=$4', [questionText.trim(), hint?.trim() || null, explanation?.trim() || null, req.params.id]);
+    await client.query('DELETE FROM options WHERE question_id=$1', [req.params.id]);
+    for (let i=0; i<options.length; i++) await client.query(
+      'INSERT INTO options (question_id, option_text, is_correct, order_index) VALUES ($1,$2,$3,$4)',
+      [req.params.id, options[i].text.trim(), isCorrect(options[i].isCorrect), i+1]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Question updated successfully!' });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error updating question:', error);
     res.status(500).json({ success: false, error: 'Failed to update question.' });
-  }
+  } finally { client.release(); }
 });
 
-/**
- * DELETE /api/questions/:id
- * Deletes a question and its options
- */
-router.delete('/:id', requireAuth, (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const owned = verifyQuestionOwnership(id, req.session.userId);
-    if (!owned) {
-      return res.status(403).json({ success: false, error: 'Question not found or access denied.' });
-    }
-
-    db.prepare('DELETE FROM questions WHERE id = ?').run(id);
-
-    res.json({
-      success: true,
-      message: 'Question deleted successfully.'
-    });
-
+    const result = await db.query(`
+      DELETE FROM questions q USING collections c
+      WHERE q.collection_id=c.id AND q.id=$1 AND c.user_id=$2
+    `, [req.params.id, req.session.userId]);
+    if (!result.rowCount) return res.status(403).json({ success: false, error: 'Question not found or access denied.' });
+    res.json({ success: true, message: 'Question deleted successfully.' });
   } catch (error) {
     console.error('Error deleting question:', error);
     res.status(500).json({ success: false, error: 'Failed to delete question.' });
   }
 });
-
 module.exports = router;
