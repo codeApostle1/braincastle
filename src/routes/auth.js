@@ -82,7 +82,8 @@ router.post('/forgot-password', async (req, res) => {
     await db.query('UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [user.id]);
     await db.query("INSERT INTO password_reset_tokens (user_id,token_hash,expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [user.id,tokenHash]);
     const baseUrl = process.env.APP_BASE_URL;
-    const resetUrl = baseUrl.replace(/\\/+$/, '') + '/reset-password.html?token=' + rawToken;
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const resetUrl = normalizedBaseUrl + '/reset-password.html?token=' + rawToken;
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
