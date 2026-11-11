@@ -40,6 +40,7 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS collections (
         id BIGSERIAL PRIMARY KEY,
         user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        category_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
         title TEXT NOT NULL,
         description TEXT,
         cover_image TEXT,
@@ -81,6 +82,7 @@ async function initDatabase() {
         is_correct BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE collections ADD COLUMN IF NOT EXISTS category_id BIGINT REFERENCES categories(id) ON DELETE SET NULL;
       CREATE INDEX IF NOT EXISTS idx_collections_user ON collections(user_id);
       CREATE INDEX IF NOT EXISTS idx_collections_published ON collections(is_published);
       CREATE INDEX IF NOT EXISTS idx_questions_collection ON questions(collection_id);
