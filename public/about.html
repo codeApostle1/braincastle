@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Learn about BrainCastle, a free quiz and study practice platform created by Joel Temitope Ademola.">
+  <title>About BrainCastle</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/about.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="nav-brand"><div class="brand-icon">🏰</div><span>Brain<span style="color:var(--color-primary)">Castle</span></span></a>
+      <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open navigation menu" aria-expanded="false">
+        <span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span>
+      </button>
+    </div>
+  </header>
+
+  <div id="navDrawerOverlay" class="nav-drawer-overlay"></div>
+  <aside id="navDrawer" class="nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
+    <div class="nav-drawer-header">
+      <div class="nav-brand" style="font-size:var(--font-size-lg)"><div class="brand-icon" style="width:32px;height:32px;font-size:1.1rem">🏰</div><span>Brain<span style="color:var(--color-primary)">Castle</span></span></div>
+      <button id="closeDrawerBtn" class="modal-close-btn" aria-label="Close menu">&times;</button>
+    </div>
+    <ul class="nav-drawer-links">
+      <li><a href="/" class="nav-drawer-link">🏠 Home</a></li>
+      <li><a href="/#collections-section" class="nav-drawer-link">📚 All Quizzes</a></li>
+      <li><a href="/login.html" class="nav-drawer-link">🔑 Creator Portal</a></li>
+      <li><a href="/about.html" class="nav-drawer-link active" aria-current="page">ℹ️ About BrainCastle</a></li>
+    </ul>
+    <div class="nav-drawer-footer">
+      <div style="font-size:var(--font-size-xs);color:var(--color-text-secondary)">Created by Joel Temitope Ademola</div>
+    </div>
+  </aside>
+
+  <main class="container about-page">
+    <section class="about-intro">
+      <span class="hero-tag">ℹ️ About the app</span>
+      <h1 class="hero-title">A little about <span class="gradient-text">BrainCastle</span></h1>
+      <p class="hero-subtitle">BrainCastle is a free learning and quiz platform created by <strong>Joel Temitope Ademola</strong>, from the Mathematics Department of Kaduna State University.</p>
+      <p class="about-copy">It helps students turn their study materials into quizzes, practise before examinations and class tests, and share questions with coursemates and other learners. Families and friends can also use it to enjoy quiz games together. BrainCastle is open to everyone: anyone can create an account, make quizzes, share them, and learn — completely free.</p>
+    </section>
+
+    <section class="about-card support-card" aria-labelledby="supportTitle">
+      <div class="about-card-icon">💚</div>
+      <div>
+        <span class="eyebrow">Keep the project going</span>
+        <h2 id="supportTitle">Show some love to the creator</h2>
+        <p>If BrainCastle has been useful to you, you can support its continued development with a voluntary contribution. Your encouragement is appreciated.</p>
+        <button id="showSupportBtn" class="btn btn-primary" type="button" aria-expanded="false" aria-controls="supportDetails">💚 Show love to the creator</button>
+        <div id="supportDetails" class="support-details" hidden>
+          <p class="detail-label">OPay Account Name</p>
+          <p class="account-name">Joel Temitope Ademola</p>
+          <p class="detail-label">Account Number</p>
+          <div class="account-number-row">
+            <strong id="accountNumber">9120992007</strong>
+            <button id="copyAccountBtn" class="btn btn-secondary btn-sm" type="button">Copy number</button>
+          </div>
+          <p id="copyFeedback" class="copy-feedback" role="status" aria-live="polite"></p>
+          <p class="support-note">Thank you for supporting a free learning resource. Contributions are entirely optional.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-card contact-card" aria-labelledby="contactTitle">
+      <div class="about-card-icon">✉️</div>
+      <div>
+        <span class="eyebrow">Questions or feedback?</span>
+        <h2 id="contactTitle">Contact the creator</h2>
+        <p>Have a suggestion, need help, or just want to say hello? You can reach Joel through any of these channels.</p>
+        <div class="contact-actions">
+          <a class="btn btn-outline" href="mailto:joelademola3max@gmail.com">✉️ Email Joel</a>
+          <a class="btn btn-outline" href="tel:+2349120992007">📞 Call</a>
+          <a class="btn btn-outline" href="https://wa.me/2349120992007" target="_blank" rel="noopener">💬 WhatsApp</a>
+        </div>
+        <p class="contact-detail">Email: <a href="mailto:joelademola3max@gmail.com">joelademola3max@gmail.com</a></p>
+        <p class="contact-detail">Phone / WhatsApp: <a href="tel:+2349120992007">0912 099 2007</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container"><p>BrainCastle &copy; 2026 &bull; Created by Joel Temitope Ademola</p></div></footer>
+
+  <script>
+    (() => {
+      const menu = document.getElementById('navDrawer');
+      const overlay = document.getElementById('navDrawerOverlay');
+      const toggle = document.getElementById('hamburgerBtn');
+      const close = document.getElementById('closeDrawerBtn');
+      function closeMenu() {
+        menu.classList.remove('active');
+        overlay.classList.remove('active');
+        toggle.classList.remove('active');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+      toggle.addEventListener('click', () => {
+        menu.classList.add('active');
+        overlay.classList.add('active');
+        toggle.classList.add('active');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      });
+      close.addEventListener('click', closeMenu);
+      overlay.addEventListener('click', closeMenu);
+
+      const showBtn = document.getElementById('showSupportBtn');
+      const details = document.getElementById('supportDetails');
+      showBtn.addEventListener('click', () => {
+        const opening = details.hidden;
+        details.hidden = !opening;
+        showBtn.setAttribute('aria-expanded', String(opening));
+        showBtn.textContent = opening ? 'Hide account details' : '💚 Show love to the creator';
+      });
+
+      document.getElementById('copyAccountBtn').addEventListener('click', async () => {
+        const number = document.getElementById('accountNumber').textContent.trim();
+        const feedback = document.getElementById('copyFeedback');
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(number);
+          } else {
+            const field = document.createElement('textarea');
+            field.value = number;
+            field.style.position = 'fixed';
+            field.style.opacity = '0';
+            document.body.appendChild(field);
+            field.select();
+            const copied = document.execCommand('copy');
+            field.remove();
+            if (!copied) throw new Error('Copy was not available');
+          }
+          feedback.textContent = 'Account number copied. You can paste it in your banking app.';
+        } catch (error) {
+          feedback.textContent = 'Please select and copy the account number above.';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
