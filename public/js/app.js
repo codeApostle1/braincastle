@@ -137,6 +137,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 12000);
   }
 
+
+  function maybeShowDonationReminder() {
+    if (localStorage.getItem('braincastle_donation_never') === '1') return;
+    if (Date.now() < Number(localStorage.getItem('braincastle_donation_next') || 0)) return;
+    setTimeout(() => {
+      if (document.getElementById('donationReminderOverlay')) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'donationReminderOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:3100;background:rgba(15,23,42,.58);display:grid;place-items:center;padding:1rem;';
+      overlay.innerHTML = '<section role="dialog" aria-modal="true" style="max-width:420px;width:100%;background:var(--color-bg-surface);color:var(--color-text-main);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.25);"><div style="font-size:1.8rem;">💚</div><h2 style="margin:.4rem 0;">Support free learning</h2><p style="color:var(--color-text-secondary);line-height:1.6;">If BrainCastle has helped you study, consider supporting its continued development. Every contribution is voluntary and appreciated.</p><a href="/about.html#supportTitle" class="btn btn-primary btn-block" style="margin:.8rem 0;">Show love to the creator</a><div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;"><button id="donationRemindLater" class="btn btn-secondary btn-sm">Remind me later</button><button id="donationRemindNever" class="btn btn-outline btn-sm">Don\'t show again</button></div></section>';
+      document.body.appendChild(overlay);
+      document.getElementById('donationRemindLater').addEventListener('click', () => { localStorage.setItem('braincastle_donation_next', String(Date.now() + 7*24*60*60*1000)); overlay.remove(); });
+      document.getElementById('donationRemindNever').addEventListener('click', () => { localStorage.setItem('braincastle_donation_never', '1'); overlay.remove(); });
+    }, 18000);
+  }
+
   function getVisitorKey() {
     let key = localStorage.getItem('braincastle_visitor_key');
     if (!key) {
@@ -202,14 +218,31 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="quiz-card-meta">
               <span class="meta-item">📝 <strong>${col.question_count}</strong> Questions</span>
               <span class="meta-item" title="Unique collection views">👁️ <strong>${Number(col.view_count || 0)}</strong> Views</span>
+              <span class="meta-item" title="Reader comments">💬 <strong>${Number(col.comment_count || 0)}</strong> Comments</span>
               <span class="meta-item">👤 ${Utils.escapeHTML(col.creator_name || 'codeapostle1')}</span>
             </div>
             <div style="margin-top: var(--space-4);">
               <button class="btn btn-outline btn-sm btn-block" style="pointer-events: none;">View Quiz & Play &rarr;</button>
+              <button class="btn btn-secondary btn-sm btn-block btn-show-comments" type="button" style="margin-top:.5rem;">💬 Read comments (${Number(col.comment_count || 0)})</button>
+              <div class="collection-comments-panel" hidden style="margin-top:.65rem;padding:.75rem;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg-muted);"></div>
             </div>
           </div>
         `;
 
+        const commentsButton = card.querySelector('.btn-show-comments');
+        const commentsPanel = card.querySelector('.collection-comments-panel');
+        commentsButton.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          commentsPanel.hidden = !commentsPanel.hidden;
+          if (!commentsPanel.hidden && !commentsPanel.dataset.loaded) {
+            commentsPanel.textContent = 'Loading comments...';
+            try {
+              const result = await API.get('/api/collections/' + col.id + '/comments');
+              commentsPanel.innerHTML = result.data.length ? result.data.map(item => '<div style="padding:.5rem 0;border-bottom:1px solid var(--color-border);"><strong>' + Utils.escapeHTML(item.display_name) + '</strong><div style="white-space:pre-wrap;overflow-wrap:anywhere;">' + Utils.escapeHTML(item.comment_text) + '</div><small style="color:var(--color-text-muted);">' + Utils.escapeHTML(new Date(item.created_at).toLocaleDateString()) + '</small></div>').join('') : '<p>No comments yet. Be the first to share your experience after playing!</p>';
+              commentsPanel.dataset.loaded = '1';
+            } catch (error) { commentsPanel.textContent = 'Comments could not be loaded right now.'; }
+          }
+        });
         card.addEventListener('click', () => { recordCollectionView(col.id); openQuizModal(col); });
         quizGrid.appendChild(card);
       });
@@ -333,4 +366,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize
   checkServerHealth();
   loadCollections();
+  maybeShowDonationReminder();
 });
