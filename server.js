@@ -4,6 +4,7 @@
  */
 const express = require('express');
 const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const config = require('./src/config');
 const db = require('./src/db/database');
@@ -17,6 +18,7 @@ app.use(session({
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
+  store: new PgSession({ pool: db, tableName: 'user_sessions', createTableIfMissing: true }),
   cookie: {
     httpOnly: true,
     secure: config.nodeEnv === 'production',
