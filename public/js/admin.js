@@ -183,6 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <p class="admin-col-desc">${Utils.escapeHTML(col.description || 'No description provided.')}</p>
           <div class="admin-col-meta">
             <span>📝 <strong>${col.question_count}</strong> questions</span>
+            <span title="Unique people/devices who opened this collection">👁️ <strong>${Number(col.view_count || 0)}</strong> views</span>
+            <span title="Total times the Start Quiz button was used">▶️ <strong>${Number(col.play_count || 0)}</strong> plays</span>
             <span>📅 ${Utils.formatDate(col.created_at)}</span>
           </div>
         </div>

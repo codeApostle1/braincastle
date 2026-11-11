@@ -87,6 +87,20 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_collections_published ON collections(is_published);
       CREATE INDEX IF NOT EXISTS idx_questions_collection ON questions(collection_id);
       CREATE INDEX IF NOT EXISTS idx_options_question ON options(question_id);
+      CREATE TABLE IF NOT EXISTS collection_views (
+        id BIGSERIAL PRIMARY KEY,
+        collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+        visitor_key TEXT NOT NULL,
+        viewed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(collection_id, visitor_key)
+      );
+      CREATE TABLE IF NOT EXISTS quiz_collection_starts (
+        id BIGSERIAL PRIMARY KEY,
+        collection_id BIGINT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_collection_views_collection ON collection_views(collection_id);
+      CREATE INDEX IF NOT EXISTS idx_quiz_starts_collection ON quiz_collection_starts(collection_id);
       CREATE INDEX IF NOT EXISTS idx_attempts_collection ON quiz_attempts(collection_id);
       CREATE INDEX IF NOT EXISTS idx_attempt_answers_attempt ON quiz_attempt_answers(attempt_id);
     `).catch(error => { schemaPromise = null; throw error; });
