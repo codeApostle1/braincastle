@@ -29,7 +29,8 @@ router.get('/creator/mine', requireAuth, async (req, res) => {
       SELECT c.id, c.title, c.description, c.cover_image, c.is_published, c.created_at, c.updated_at,
         (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count,
         (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count,
-        (SELECT COUNT(*)::int FROM quiz_collection_starts s WHERE s.collection_id = c.id) AS play_count
+        (SELECT COUNT(*)::int FROM quiz_collection_starts s WHERE s.collection_id = c.id) AS play_count,
+        (SELECT COUNT(*)::int FROM collection_comments cm WHERE cm.collection_id = c.id) AS comment_count
       FROM collections c WHERE c.user_id = $1 ORDER BY c.created_at DESC
     `, [req.session.userId]);
     res.json({ success: true, data: rows });
