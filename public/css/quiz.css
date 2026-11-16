@@ -537,3 +537,30 @@ html.quiz-page, body.quiz-player-body {
   color: var(--color-text-secondary);
   line-height: 1.4;
 }
+
+
+/* Keep the countdown prominent and centered in the quiz top bar */
+.topbar-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-2);
+}
+.quiz-info-header { min-width: 0; }
+.quiz-timer-centered {
+  justify-self: center;
+  position: relative;
+  z-index: 2;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.45rem 0.8rem;
+  min-width: 92px;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+.quiz-session-badge { justify-self: end; }
+@media (max-width: 420px) {
+  .quiz-title-text { max-width: 82px; }
+  .topbar-content { padding-left: var(--space-2); padding-right: var(--space-2); gap: 4px; }
+  .quiz-timer-centered { min-width: 76px; padding: 0.35rem 0.45rem; font-size: 0.9rem; }
+  .quiz-session-badge { font-size: 0.62rem !important; padding: 0.2rem 0.35rem !important; }
+}
