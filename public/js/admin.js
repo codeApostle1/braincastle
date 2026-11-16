@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cancelQuestionBtn = document.getElementById('cancelQuestionBtn');
   const saveQuestionBtn = document.getElementById('saveQuestionBtn');
   const qmQuestionsContainer = document.getElementById('qmQuestionsContainer');
+  const qmQuestionStatus = document.getElementById('qmQuestionStatus');
+  const optionEditorList = document.getElementById('optionEditorList');
+  const addOptionBtn = document.getElementById('addOptionBtn');
 
   // Preview Modal Elements
   const previewModal = document.getElementById('previewModal');
@@ -422,6 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!activeManagingCollection) return;
     const qs = activeManagingCollection.questions || [];
     qmQuestionCount.textContent = qs.length;
+    updateQuestionStatus();
 
     if (qs.length === 0) {
       qmQuestionsContainer.innerHTML = `
@@ -463,23 +467,102 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function renderOptionInputs(options = []) {
+    optionEditorList.innerHTML = '';
+    options.forEach((option, index) => {
+      const row = document.createElement('div');
+      row.className = 'option-editor-row';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'correctOption';
+      radio.value = String(index);
+      radio.className = 'option-correct-radio';
+      radio.checked = Boolean(option.isCorrect) || (index === 0 && !options.some(item => item.isCorrect));
+      radio.title = 'Mark as correct answer';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'search-input option-text-input';
+      input.value = option.text || '';
+      input.placeholder = `Option ${index + 1}`;
+      input.style.cssText = 'padding: 0.4rem 0.75rem; font-size: var(--font-size-xs); flex: 1; min-width: 0;';
+      input.setAttribute('aria-label', `Option ${index + 1}`);
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn btn-outline btn-sm remove-option-btn';
+      remove.textContent = 'Remove';
+      remove.title = 'Remove this option';
+      remove.addEventListener('click', () => {
+        if (optionEditorList.children.length <= 2) {
+          alert('A question must have at least two options.');
+          return;
+        }
+        const wasCorrect = radio.checked;
+        row.remove();
+        if (wasCorrect) optionEditorList.querySelector('input[name="correctOption"]').checked = true;
+        renumberOptionInputs();
+      });
+      row.append(radio, input, remove);
+      optionEditorList.appendChild(row);
+    });
+    renumberOptionInputs();
+  }
+
+  function renumberOptionInputs() {
+    Array.from(optionEditorList.querySelectorAll('.option-editor-row')).forEach((row, index) => {
+      const radio = row.querySelector('input[type="radio"]');
+      const input = row.querySelector('.option-text-input');
+      radio.value = String(index);
+      input.placeholder = `Option ${index + 1}`;
+      input.setAttribute('aria-label', `Option ${index + 1}`);
+    });
+  }
+
+  function updateQuestionStatus() {
+    if (!activeManagingCollection || !qmQuestionStatus) return;
+    const questions = activeManagingCollection.questions || [];
+    const editingId = editQuestionId.value;
+    if (editingId) {
+      const position = questions.findIndex(question => String(question.id) === String(editingId));
+      qmQuestionStatus.textContent = `Currently editing question ${position >= 0 ? position + 1 : '—'} of ${questions.length}`;
+    } else {
+      qmQuestionStatus.textContent = `Adding question ${questions.length + 1} • ${questions.length} question${questions.length === 1 ? '' : 's'} currently available`;
+    }
+  }
+
   function resetQuestionForm() {
     questionFormBox.style.display = 'none';
     editQuestionId.value = '';
     qText.value = '';
     qHint.value = '';
     qExplanation.value = '';
-    document.getElementById('optText1').value = '';
-    document.getElementById('optText2').value = '';
-    document.getElementById('optText3').value = '';
-    document.getElementById('optText4').value = '';
-    document.getElementById('radioOpt1').checked = true;
+    renderOptionInputs([
+      { text: '', isCorrect: true },
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false }
+    ]);
+    updateQuestionStatus();
+  }
+
+  if (addOptionBtn) {
+    addOptionBtn.addEventListener('click', () => {
+      const count = optionEditorList.querySelectorAll('.option-editor-row').length;
+      renderOptionInputs([
+        ...Array.from(optionEditorList.querySelectorAll('.option-editor-row')).map(row => ({
+          text: row.querySelector('.option-text-input').value,
+          isCorrect: row.querySelector('input[type="radio"]').checked
+        })),
+        { text: '', isCorrect: false }
+      ]);
+    });
   }
 
   toggleAddQuestionBtn.addEventListener('click', () => {
     resetQuestionForm();
     qFormTitle.textContent = 'Add New Question';
     questionFormBox.style.display = 'block';
+    updateQuestionStatus();
+    questionFormBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     qText.focus();
   });
 
@@ -494,22 +577,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     qHint.value = q.hint || '';
     qExplanation.value = q.explanation || '';
 
-    // Populate options
-    const opts = q.options || [];
-    for (let i = 0; i < 4; i++) {
-      const opt = opts[i];
-      const textInput = document.getElementById(`optText${i + 1}`);
-      const radioInput = document.getElementById(`radioOpt${i + 1}`);
-      if (opt) {
-        textInput.value = opt.text;
-        if (opt.isCorrect) radioInput.checked = true;
-      } else {
-        textInput.value = '';
-      }
-    }
-
+    // Restore every saved option, including options beyond the original four.
+    renderOptionInputs((q.options || []).map(option => ({ text: option.text, isCorrect: option.isCorrect })));
     questionFormBox.style.display = 'block';
-    questionFormBox.scrollIntoView({ behavior: 'smooth' });
+    updateQuestionStatus();
+    questionFormBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   saveQuestionBtn.addEventListener('click', async () => {
@@ -519,19 +591,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const optionRows = Array.from(optionEditorList.querySelectorAll('.option-editor-row'));
+    if (optionRows.length < 2) {
+      alert('Please add at least two answer options.');
+      return;
+    }
+    const selectedCorrect = optionEditorList.querySelector('input[name="correctOption"]:checked');
+    if (!selectedCorrect) {
+      alert('Please select the correct answer.');
+      return;
+    }
+    const selectedCorrectIdx = Number(selectedCorrect.value);
     const options = [];
-    const selectedCorrectIdx = document.querySelector('input[name="correctOption"]:checked').value;
-
-    for (let i = 0; i < 4; i++) {
-      const val = document.getElementById(`optText${i + 1}`).value.trim();
+    for (let i = 0; i < optionRows.length; i++) {
+      const val = optionRows[i].querySelector('.option-text-input').value.trim();
       if (!val) {
-        alert(`Please fill in Option ${String.fromCharCode(65 + i)}`);
+        alert(`Please complete or remove Option ${i + 1}.`);
         return;
       }
-      options.push({
-        text: val,
-        isCorrect: parseInt(selectedCorrectIdx, 10) === i
-      });
+      options.push({ text: val, isCorrect: i === selectedCorrectIdx });
+    }
+
+    // Four options is the usual format. Confirm before saving a shorter question.
+    if (options.length < 4 && !window.confirm(`You are saving this question with only ${options.length} options. Do you want to continue?`)) {
+      return;
     }
 
     const payload = {
