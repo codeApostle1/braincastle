@@ -79,7 +79,7 @@ app.get('/api/health', async (req,res) => {
 });
 app.use('/api/categories', require('./src/routes/categories'));
 app.use('/api/collections', (req, res, next) => {
-  if (req.method === 'POST' && /\\/comments$/.test(req.path)) return commentThrottle(req, res, next);
+  if (req.method === 'POST' && /\/comments$/.test(req.path)) return commentThrottle(req, res, next);
   next();
 }, require('./src/routes/collections'));
 app.use('/api/questions', require('./src/routes/questions'));
