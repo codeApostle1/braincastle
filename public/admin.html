@@ -197,12 +197,13 @@
 
       <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
         
-        <!-- Toggle button to add question -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-          <span style="font-weight: 700; font-size: var(--font-size-sm);">Existing Questions (<span id="qmQuestionCount">0</span>)</span>
-          <button type="button" id="toggleAddQuestionBtn" class="btn btn-primary btn-sm">
-            ➕ Add Question
-          </button>
+        <!-- Sticky question controls stay visible while browsing the list -->
+        <div class="qm-sticky-toolbar">
+          <div>
+            <div style="font-weight: 700; font-size: var(--font-size-sm);">Questions available: <span id="qmQuestionCount">0</span></div>
+            <div id="qmQuestionStatus" class="form-help">Ready to add the next question</div>
+          </div>
+          <button type="button" id="toggleAddQuestionBtn" class="btn btn-primary btn-sm">➕ Add Question</button>
         </div>
 
         <!-- Question Add/Edit Form Box (Expandable) -->
@@ -224,29 +225,9 @@
               <span style="font-size: 0.7rem; color: var(--color-success); font-weight: 700;">● Green Radio = Correct</span>
             </label>
 
-            <!-- Option 1 -->
-            <div class="option-editor-row">
-              <input type="radio" name="correctOption" id="radioOpt1" value="0" class="option-correct-radio" checked title="Mark as correct answer" />
-              <input type="text" id="optText1" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option A (Correct Answer)" required />
-            </div>
-
-            <!-- Option 2 -->
-            <div class="option-editor-row">
-              <input type="radio" name="correctOption" id="radioOpt2" value="1" class="option-correct-radio" title="Mark as correct answer" />
-              <input type="text" id="optText2" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option B" required />
-            </div>
-
-            <!-- Option 3 -->
-            <div class="option-editor-row">
-              <input type="radio" name="correctOption" id="radioOpt3" value="2" class="option-correct-radio" title="Mark as correct answer" />
-              <input type="text" id="optText3" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option C" required />
-            </div>
-
-            <!-- Option 4 -->
-            <div class="option-editor-row">
-              <input type="radio" name="correctOption" id="radioOpt4" value="3" class="option-correct-radio" title="Mark as correct answer" />
-              <input type="text" id="optText4" class="search-input" style="padding: 0.4rem 0.75rem; font-size: var(--font-size-xs);" placeholder="Option D" required />
-            </div>
+            <div id="optionEditorList"></div>
+            <button type="button" id="addOptionBtn" class="btn btn-outline btn-sm" style="margin-top: var(--space-2);">➕ Add Another Option</button>
+            <div class="form-help">Add as many answer options as you need. Select the radio beside the correct answer. At least two options are required.</div>
           </div>
 
           <div class="form-group">
