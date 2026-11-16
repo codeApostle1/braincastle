@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let isSubmitting = false;
   let timerInterval = null;
 
-  const optionLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const optionLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
   /**
    * 4. Fetch Quiz Session Data
@@ -403,13 +403,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
       currentIndex--;
       renderCurrentQuestion();
-    } else if (['1', '2', '3', '4', 'a', 'b', 'c', 'd'].includes(e.key.toLowerCase())) {
+    } else if (/^[1-9]$/.test(e.key) || /^[a-z]$/i.test(e.key)) {
       const q = questions[currentIndex];
       let optIdx = -1;
-      if (['1', '2', '3', '4'].includes(e.key)) {
+      if (/^[1-9]$/.test(e.key)) {
         optIdx = parseInt(e.key, 10) - 1;
       } else {
-        optIdx = ['a', 'b', 'c', 'd'].indexOf(e.key.toLowerCase());
+        optIdx = e.key.toLowerCase().charCodeAt(0) - 97;
       }
       if (q && q.options[optIdx]) {
         selectOption(q.id, q.options[optIdx].id);
