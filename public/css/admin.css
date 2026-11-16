@@ -244,3 +244,23 @@
   cursor: pointer;
   flex-shrink: 0;
 }
+
+
+/* Sticky question controls and flexible answer-option editor */
+.qm-sticky-toolbar {
+  position: sticky;
+  top: -1px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) var(--space-4);
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.06);
+}
+.qm-sticky-toolbar .form-help { margin-top: 2px; }
+.option-editor-row .option-text-input { flex: 1; min-width: 0; }
+.option-editor-row .remove-option-btn { flex-shrink: 0; }
