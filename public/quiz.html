@@ -18,15 +18,13 @@
         <h2 id="quizTitle" class="quiz-title-text">BrainCastle Quiz</h2>
       </div>
 
-      <div style="display: flex; align-items: center; gap: var(--space-2);">
-        <!-- Optional Timer Widget -->
-        <div id="timerWidget" class="timer-badge" style="display: none;">
-          <span>⏱</span>
-          <span id="timerCountdown">00:00</span>
-        </div>
-
-        <span id="quizBadge" class="badge" style="background-color: var(--color-primary-light); color: var(--color-primary); font-weight: 700; padding: 0.25rem 0.55rem; border-radius: var(--radius-full); font-size: 0.72rem;">Session</span>
+      <!-- Optional timer is centered in the top bar -->
+      <div id="timerWidget" class="timer-badge quiz-timer-centered" style="display: none;">
+        <span>⏱</span>
+        <span id="timerCountdown">00:00</span>
       </div>
+
+      <span id="quizBadge" class="badge quiz-session-badge" style="background-color: var(--color-primary-light); color: var(--color-primary); font-weight: 700; padding: 0.25rem 0.55rem; border-radius: var(--radius-full); font-size: 0.72rem;">Session</span>
     </div>
 
     <!-- Animated Progress Line -->
