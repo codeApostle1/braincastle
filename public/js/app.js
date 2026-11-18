@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
           event.stopPropagation();
           commentsPanel.hidden = !commentsPanel.hidden;
           if (!commentsPanel.hidden && !commentsPanel.dataset.loaded) {
-            commentsPanel.textContent = 'Loading comments...';
+            commentsPanel.innerHTML = '<p class="comment-play-notice">You can read comments here. To add your own comment, first play this quiz.</p><p>Loading comments...</p>';
             try {
               const result = await API.get('/api/collections/' + col.id + '/comments');
               commentsPanel.innerHTML = result.commentsHidden ? '<p>The creator has hidden comments for this quiz.</p>' : (result.data.length ? result.data.map(item => '<div style="padding:.5rem 0;border-bottom:1px solid var(--color-border);"><strong>' + Utils.escapeHTML(item.display_name) + '</strong><div style="white-space:pre-wrap;overflow-wrap:anywhere;">' + Utils.escapeHTML(item.comment_text) + '</div><small style="color:var(--color-text-muted);">' + Utils.escapeHTML(new Date(item.created_at).toLocaleDateString()) + '</small></div>').join('') : '<p>No comments yet. Play the quiz to leave the first comment!</p>');
