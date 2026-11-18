@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) { Utils.showToast(error.message || 'Could not save comment settings.', 'error'); }
       });
       card.querySelector('.btn-copy-creator-link').addEventListener('click', async () => {
-        const link = new URL('/quiz.html?collectionId=' + encodeURIComponent(col.id), window.location.origin).href;
+        const link = new URL('/?quiz=' + encodeURIComponent(col.id), window.location.origin).href;
         try { await navigator.clipboard.writeText(link); Utils.showToast('Quiz link copied!', 'success'); }
         catch (error) { window.prompt('Copy this quiz link:', link); }
       });

@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const shareButton = card.querySelector('.btn-copy-collection');
         shareButton.addEventListener('click', async (event) => {
           event.stopPropagation();
-          const link = new URL('/quiz.html?collectionId=' + encodeURIComponent(col.id), window.location.origin).href;
+          const link = new URL('/?quiz=' + encodeURIComponent(col.id), window.location.origin).href;
           try {
             await navigator.clipboard.writeText(link);
             Utils.showToast('Quiz link copied!', 'success');
@@ -260,6 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
         card.addEventListener('click', (event) => { if (event.target.closest('button')) return; recordCollectionView(col.id); openQuizModal(col); });
         quizGrid.appendChild(card);
       });
+
+      // A shared quiz link opens the homepage setup modal first, never the question player directly.
+      const sharedQuizId = new URLSearchParams(window.location.search).get('quiz');
+      if (sharedQuizId) {
+        const sharedCollection = collections.find(item => String(item.id) === String(sharedQuizId));
+        if (sharedCollection) {
+          openQuizModal(sharedCollection);
+        } else {
+          Utils.showToast('This quiz could not be found. It may have been unpublished.', 'error');
+        }
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      }
     } catch (error) {
       console.error('Error loading collections:', error);
       quizGrid.innerHTML = `
