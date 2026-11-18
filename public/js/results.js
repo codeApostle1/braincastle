@@ -99,9 +99,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       reviewItems = res.review || [];
       commentCollectionId = res.collection.id;
       try {
-        const me = await API.get('/api/auth/me');
-        if (me.user) identityNote.textContent = 'Your comment will appear under your display name: ' + me.user.name + '.';
-        else identityNote.textContent = 'Your comment will appear as Anonymous with a private device code. No account is required.';
+        const collectionInfo = await API.get('/api/collections/' + encodeURIComponent(commentCollectionId));
+        if (collectionInfo.data.comments_enabled === false) {
+          commentForm.innerHTML = '<p class="comments-paused-note">The creator has paused comments for this quiz.</p>';
+        } else {
+          const me = await API.get('/api/auth/me');
+          if (me.user) identityNote.textContent = 'Your comment will appear under your display name: ' + me.user.name + '.';
+          else identityNote.textContent = 'Your comment will appear as Anonymous with a private device code. No account is required.';
+        }
       } catch (e) { identityNote.textContent = 'Your comment will appear as Anonymous with a private device code.'; }
 
       // Update Header Badge
