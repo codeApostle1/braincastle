@@ -201,6 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${isLive ? 'Unpublish' : 'Publish'}
           </button>
           <button class="btn btn-secondary btn-sm btn-view-comments" data-id="${col.id}">💬 Comments</button>
+          <button class="btn btn-secondary btn-sm btn-copy-creator-link" data-id="${col.id}" title="Copy direct quiz link">🔗 Copy link</button>
           <button class="btn btn-secondary btn-sm btn-edit-col" data-id="${col.id}">
             ⚙ Edit
           </button>
@@ -216,7 +217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             <label><input type="checkbox" class="creator-comments-enabled" ${col.comments_enabled === false ? '' : 'checked'}> Allow new comments</label>
             <label><input type="checkbox" class="creator-comments-visible" ${col.comments_visible === false ? '' : 'checked'}> Show comments to players</label>
             <button type="button" class="btn btn-secondary btn-sm btn-save-comment-settings">Save comment settings</button>
-            <button type="button" class="btn btn-outline btn-sm btn-copy-creator-link">🔗 Copy quiz link</button>
           </div>
           <div class="creator-comments-list" aria-live="polite">Open Comments to load feedback.</div>
         </section>
