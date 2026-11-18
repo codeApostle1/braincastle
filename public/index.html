@@ -124,19 +124,12 @@
 
         <!-- Question Count Selector -->
         <div class="form-group">
-          <label for="questionCountRange" class="form-label" style="display: flex; justify-content: space-between;">
-            <span>Number of Questions</span>
-            <strong id="questionCountDisplay" style="color: var(--color-primary); font-size: var(--font-size-base);">5</strong>
-          </label>
-          <input 
-            type="range" 
-            id="questionCountRange" 
-            class="form-range" 
-            min="1" 
-            max="10" 
-            value="5"
-          />
-          <div class="form-help">Select how many questions you want to attempt from this collection.</div>
+          <label for="questionCountInput" class="form-label">How many questions would you like to answer?</label>
+          <div class="question-count-entry">
+            <input type="number" id="questionCountInput" class="search-input question-count-input" min="1" max="10" inputmode="numeric" placeholder="Enter a number" />
+            <strong id="questionCountDisplay" class="question-count-total">out of 10</strong>
+          </div>
+          <div class="form-help">Leave the box empty to play all questions. You can choose any number up to the total available.</div>
         </div>
 
         <!-- Shuffle Option -->
