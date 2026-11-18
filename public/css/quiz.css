@@ -564,3 +564,19 @@ html.quiz-page, body.quiz-player-body {
   .quiz-timer-centered { min-width: 76px; padding: 0.35rem 0.45rem; font-size: 0.9rem; }
   .quiz-session-badge { font-size: 0.62rem !important; padding: 0.2rem 0.35rem !important; }
 }
+
+
+/* Keep results and the feedback prompt compact on phone screens */
+@media (max-width: 600px) {
+  .results-hero-card { padding: var(--space-3); margin: var(--space-2) auto var(--space-3); }
+  .score-circle-wrap { width: 82px; height: 82px; margin-bottom: var(--space-2); }
+  .score-text-inner { font-size: 1.25rem; }
+  .results-title { font-size: var(--font-size-lg); }
+  .results-message { margin-bottom: var(--space-2); }
+  .stats-grid { padding: var(--space-2) 0; margin-bottom: var(--space-3); }
+  .stat-value { font-size: var(--font-size-lg); }
+  #quizFeedbackSection { margin-top: var(--space-3) !important; }
+  #quizFeedbackSection .review-card { padding: var(--space-3); margin-bottom: var(--space-3); }
+  #quizCommentText { min-height: 76px; }
+  .review-section { margin-bottom: var(--space-4); }
+}
