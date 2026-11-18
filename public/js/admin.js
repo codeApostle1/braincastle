@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const commentsVisible = card.querySelector('.creator-comments-visible').checked;
         try {
           await API.request('/api/collections/creator/' + encodeURIComponent(col.id) + '/comment-settings', {
-            method: 'PATCH', body: JSON.stringify({ commentsEnabled, commentsVisible })
+            method: 'PATCH', body: { commentsEnabled, commentsVisible }
           });
           col.comments_enabled = commentsEnabled;
           col.comments_visible = commentsVisible;
