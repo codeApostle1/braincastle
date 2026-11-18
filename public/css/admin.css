@@ -286,3 +286,8 @@
   .admin-col-actions .btn { min-width: 0; white-space: normal; }
   .creator-comments-settings { align-items: flex-start; flex-direction: column; }
 }
+
+@media (min-width: 768px) {
+  .admin-collection-card { flex-wrap: wrap; }
+  .creator-comments-panel { flex: 0 0 100%; }
+}
