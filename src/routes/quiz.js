@@ -79,6 +79,7 @@ router.post('/submit', async (req, res) => {
       [attemptId,item.questionId,item.selectedOptionId,item.isCorrect]
     );
     await client.query('COMMIT');
+    req.session.completedQuizCollections = Array.from(new Set([...(req.session.completedQuizCollections || []).map(String), String(collectionId)])).slice(-100);
     res.json({success:true,attemptId,results:{attemptId,totalQuestions:totalCount,correctAnswers:correctCount,incorrectAnswers:totalCount-correctCount,scorePercentage,isShuffled:Boolean(req.body.isShuffled),collection:{id:collection.id,title:collection.title},review:reviewDetails}});
   } catch (error) {
     await client.query('ROLLBACK');

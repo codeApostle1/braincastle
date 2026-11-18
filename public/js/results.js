@@ -98,10 +98,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = response.results;
       reviewItems = res.review || [];
       commentCollectionId = res.collection.id;
+      const resultCommentsList = document.getElementById('resultCommentsList');
       try {
-        const me = await API.get('/api/auth/me');
-        if (me.user) identityNote.textContent = 'Your comment will appear under your display name: ' + me.user.name + '.';
-        else identityNote.textContent = 'Your comment will appear as Anonymous with a private device code. No account is required.';
+        const publicComments = await API.get('/api/collections/' + encodeURIComponent(commentCollectionId) + '/comments');
+        if (publicComments.commentsHidden) {
+          resultCommentsList.textContent = 'The creator has chosen not to display comments publicly.';
+        } else {
+          resultCommentsList.innerHTML = publicComments.data.length ? publicComments.data.map(item =>
+            '<article class="result-comment-item"><strong>' + Utils.escapeHTML(item.display_name) +
+            '</strong><p>' + Utils.escapeHTML(item.comment_text) + '</p><small>' +
+            Utils.escapeHTML(new Date(item.created_at).toLocaleDateString()) + '</small></article>').join('') :
+            '<p>No comments yet. Play the quiz and share the first comment!</p>';
+        }
+      } catch (error) { resultCommentsList.textContent = 'Comments could not be loaded right now.'; }
+      try {
+        const collectionInfo = await API.get('/api/collections/' + encodeURIComponent(commentCollectionId));
+        if (collectionInfo.data.comments_enabled === false) {
+          commentForm.innerHTML = '<p class="comments-paused-note">The creator has paused comments for this quiz.</p>';
+        } else {
+          const me = await API.get('/api/auth/me');
+          if (me.user) identityNote.textContent = 'Your comment will appear under your display name: ' + me.user.name + '.';
+          else identityNote.textContent = 'Your comment will appear as Anonymous with a private device code. No account is required.';
+        }
       } catch (e) { identityNote.textContent = 'Your comment will appear as Anonymous with a private device code.'; }
 
       // Update Header Badge

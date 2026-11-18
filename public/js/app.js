@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalCancelBtn = document.getElementById('modalCancelBtn');
   const modalTitle = document.getElementById('modalTitle');
   const modalDesc = document.getElementById('modalDesc');
-  const questionCountRange = document.getElementById('questionCountRange');
+  const questionCountInput = document.getElementById('questionCountInput');
   const questionCountDisplay = document.getElementById('questionCountDisplay');
   const shuffleCheckbox = document.getElementById('shuffleCheckbox');
   const startQuizBtn = document.getElementById('startQuizBtn');
@@ -219,15 +219,28 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="meta-item">📝 <strong>${col.question_count}</strong> Questions</span>
               <span class="meta-item" title="Unique collection views">👁️ <strong>${Number(col.view_count || 0)}</strong> Views</span>
               <span class="meta-item" title="Reader comments">💬 <strong>${Number(col.comment_count || 0)}</strong> Comments</span>
-              <span class="meta-item">👤 ${Utils.escapeHTML(col.creator_name || 'codeapostle1')}</span>
+              <span class="meta-item creator-meta">👤 ${Utils.escapeHTML(col.creator_name || 'codeapostle1')}</span>
             </div>
-            <div style="margin-top: var(--space-4);">
-              <button class="btn btn-outline btn-sm btn-block" style="pointer-events: none;">View Quiz & Play &rarr;</button>
+            <div class="quiz-card-actions" style="margin-top: var(--space-4);">
+              <button class="btn btn-outline btn-sm btn-block btn-play-collection" type="button">View Quiz & Play &rarr;</button>
+              <button class="btn btn-secondary btn-sm btn-block btn-copy-collection" type="button" aria-label="Copy quiz link">🔗 Copy quiz link</button>
               <button class="btn btn-secondary btn-sm btn-block btn-show-comments" type="button" style="margin-top:.5rem;">💬 Read comments (${Number(col.comment_count || 0)})</button>
               <div class="collection-comments-panel" hidden style="margin-top:.65rem;padding:.75rem;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg-muted);"></div>
             </div>
           </div>
         `;
+
+        const shareButton = card.querySelector('.btn-copy-collection');
+        shareButton.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const link = new URL('/quiz.html?collectionId=' + encodeURIComponent(col.id), window.location.origin).href;
+          try {
+            await navigator.clipboard.writeText(link);
+            Utils.showToast('Quiz link copied!', 'success');
+          } catch (error) {
+            window.prompt('Copy this quiz link:', link);
+          }
+        });
 
         const commentsButton = card.querySelector('.btn-show-comments');
         const commentsPanel = card.querySelector('.collection-comments-panel');
@@ -235,15 +248,16 @@ document.addEventListener('DOMContentLoaded', () => {
           event.stopPropagation();
           commentsPanel.hidden = !commentsPanel.hidden;
           if (!commentsPanel.hidden && !commentsPanel.dataset.loaded) {
-            commentsPanel.textContent = 'Loading comments...';
+            commentsPanel.innerHTML = '<p class="comment-play-notice">You can read comments here. To add your own comment, first play this quiz.</p><p>Loading comments...</p>';
             try {
               const result = await API.get('/api/collections/' + col.id + '/comments');
-              commentsPanel.innerHTML = result.data.length ? result.data.map(item => '<div style="padding:.5rem 0;border-bottom:1px solid var(--color-border);"><strong>' + Utils.escapeHTML(item.display_name) + '</strong><div style="white-space:pre-wrap;overflow-wrap:anywhere;">' + Utils.escapeHTML(item.comment_text) + '</div><small style="color:var(--color-text-muted);">' + Utils.escapeHTML(new Date(item.created_at).toLocaleDateString()) + '</small></div>').join('') : '<p>No comments yet. Be the first to share your experience after playing!</p>';
+              commentsPanel.innerHTML = result.commentsHidden ? '<p>The creator has hidden comments for this quiz.</p>' : (result.commentsEnabled === false ? '<p>The creator has paused new comments. You can still read existing feedback.</p>' : '') + (result.data.length ? result.data.map(item => '<div style="padding:.5rem 0;border-bottom:1px solid var(--color-border);"><strong>' + Utils.escapeHTML(item.display_name) + '</strong><div style="white-space:pre-wrap;overflow-wrap:anywhere;">' + Utils.escapeHTML(item.comment_text) + '</div><small style="color:var(--color-text-muted);">' + Utils.escapeHTML(new Date(item.created_at).toLocaleDateString()) + '</small></div>').join('') : '<p>No comments yet. Play the quiz to leave the first comment!</p>');
               commentsPanel.dataset.loaded = '1';
             } catch (error) { commentsPanel.textContent = 'Comments could not be loaded right now.'; }
           }
         });
-        card.addEventListener('click', () => { recordCollectionView(col.id); openQuizModal(col); });
+        card.querySelector('.btn-play-collection').addEventListener('click', (event) => { event.stopPropagation(); recordCollectionView(col.id); openQuizModal(col); });
+        card.addEventListener('click', (event) => { if (event.target.closest('button')) return; recordCollectionView(col.id); openQuizModal(col); });
         quizGrid.appendChild(card);
       });
     } catch (error) {
@@ -265,9 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
     modalDesc.textContent = collection.description || 'Configure your quiz session parameters below:';
 
     const maxQ = Math.max(1, collection.question_count || 1);
-    questionCountRange.max = maxQ;
-    questionCountRange.value = maxQ;
-    questionCountDisplay.textContent = maxQ;
+    questionCountInput.max = maxQ;
+    questionCountInput.value = '';
+    questionCountInput.placeholder = 'Enter a number';
+    questionCountInput.setAttribute('aria-label', 'Number of questions, out of ' + maxQ);
+    questionCountDisplay.textContent = 'out of ' + maxQ;
 
     // Reset timer checkbox
     timerCheckbox.checked = false;
@@ -284,10 +300,12 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedCollection = null;
   }
 
-  // Question count slider listener
-  if (questionCountRange) {
-    questionCountRange.addEventListener('input', (e) => {
-      questionCountDisplay.textContent = e.target.value;
+  // Question count entry is validated before the quiz starts.
+  if (questionCountInput) {
+    questionCountInput.addEventListener('input', () => {
+      const max = Number(questionCountInput.max);
+      if (Number(questionCountInput.value) > max) questionCountInput.value = String(max);
+      if (Number(questionCountInput.value) < 1 && questionCountInput.value !== '') questionCountInput.value = '1';
     });
   }
 
@@ -339,7 +357,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (startQuizBtn) {
     startQuizBtn.addEventListener('click', () => {
       if (!selectedCollection) return;
-      const count = questionCountRange.value;
+      const maxCount = Number(questionCountInput.max);
+      const count = questionCountInput.value.trim() === '' ? maxCount : Number(questionCountInput.value);
+      if (!Number.isInteger(count) || count < 1 || count > maxCount) {
+        Utils.showToast('Enter a question count from 1 to ' + maxCount + '.', 'error');
+        questionCountInput.focus();
+        return;
+      }
       const shuffle = shuffleCheckbox.checked ? '1' : '0';
       const timerVal = timerCheckbox.checked ? selectedTimerMinutes : '0';
 

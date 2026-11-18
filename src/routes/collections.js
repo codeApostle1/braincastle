@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
     const search = String(req.query.search || '').trim();
     const params = search ? [`%${search}%`] : [];
     const { rows } = await db.query(`
-      SELECT c.id, c.title, c.description, c.cover_image, c.created_at, u.name AS creator_name,
+      SELECT c.id, c.title, c.description, c.cover_image, c.created_at, c.comments_enabled, c.comments_visible, u.name AS creator_name,
         (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count,
         (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count,
         (SELECT COUNT(*)::int FROM collection_comments cm WHERE cm.collection_id = c.id) AS comment_count
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 router.get('/creator/mine', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(`
-      SELECT c.id, c.title, c.description, c.cover_image, c.is_published, c.created_at, c.updated_at,
+      SELECT c.id, c.title, c.description, c.cover_image, c.is_published, c.comments_enabled, c.comments_visible, c.created_at, c.updated_at,
         (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count,
         (SELECT COUNT(*)::int FROM collection_views v WHERE v.collection_id = c.id) AS view_count,
         (SELECT COUNT(*)::int FROM quiz_collection_starts s WHERE s.collection_id = c.id) AS play_count,
@@ -84,16 +84,49 @@ router.post('/:id/view', async (req, res) => {
 
 router.get('/:id/comments', async (req, res) => {
   try {
-    const { rows: collectionRows } = await db.query('SELECT id FROM collections WHERE id=$1 AND is_published=TRUE', [req.params.id]);
+    const { rows: collectionRows } = await db.query(
+      'SELECT id, comments_enabled, comments_visible FROM collections WHERE id=$1 AND is_published=TRUE',
+      [req.params.id]
+    );
     if (!collectionRows[0]) return res.status(404).json({ success: false, error: 'Quiz collection not found.' });
+    if (!collectionRows[0].comments_visible) return res.json({ success: true, data: [], commentsHidden: true, commentsEnabled: collectionRows[0].comments_enabled });
     const { rows } = await db.query(
       'SELECT id, display_name, comment_text, created_at FROM collection_comments WHERE collection_id=$1 ORDER BY created_at DESC LIMIT 100',
       [req.params.id]
     );
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: rows, commentsHidden: false, commentsEnabled: collectionRows[0].comments_enabled });
   } catch (error) {
     console.error('Could not load comments:', error);
     res.status(500).json({ success: false, error: 'Could not load comments.' });
+  }
+});
+
+router.get('/creator/:id/comments', requireAuth, async (req, res) => {
+  try {
+    const owned = await db.query('SELECT id, title, comments_enabled, comments_visible FROM collections WHERE id=$1 AND user_id=$2', [req.params.id, req.session.userId]);
+    if (!owned.rows[0]) return res.status(404).json({ success: false, error: 'Quiz not found or access denied.' });
+    const comments = await db.query('SELECT id, display_name, comment_text, created_at FROM collection_comments WHERE collection_id=$1 ORDER BY created_at DESC LIMIT 200', [req.params.id]);
+    res.json({ success: true, collection: owned.rows[0], data: comments.rows });
+  } catch (error) {
+    console.error('Could not load creator comments:', error);
+    res.status(500).json({ success: false, error: 'Could not load creator comments.' });
+  }
+});
+
+router.patch('/creator/:id/comment-settings', requireAuth, async (req, res) => {
+  try {
+    const enabled = req.body?.commentsEnabled;
+    const visible = req.body?.commentsVisible;
+    if (typeof enabled !== 'boolean' || typeof visible !== 'boolean') return res.status(400).json({ success: false, error: 'Choose valid comment settings.' });
+    const updated = await db.query(
+      'UPDATE collections SET comments_enabled=$1, comments_visible=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$3 AND user_id=$4 RETURNING comments_enabled, comments_visible',
+      [enabled, visible, req.params.id, req.session.userId]
+    );
+    if (!updated.rows[0]) return res.status(404).json({ success: false, error: 'Quiz not found or access denied.' });
+    res.json({ success: true, settings: updated.rows[0] });
+  } catch (error) {
+    console.error('Could not update comment settings:', error);
+    res.status(500).json({ success: false, error: 'Could not update comment settings.' });
   }
 });
 
@@ -101,8 +134,11 @@ router.post('/:id/comments', async (req, res) => {
   try {
     const comment = String(req.body?.comment || '').trim();
     if (comment.length < 3 || comment.length > 600) return res.status(400).json({ success: false, error: 'Comments must be between 3 and 600 characters.' });
-    const { rows: collectionRows } = await db.query('SELECT id FROM collections WHERE id=$1 AND is_published=TRUE', [req.params.id]);
+    const { rows: collectionRows } = await db.query('SELECT id, comments_enabled FROM collections WHERE id=$1 AND is_published=TRUE', [req.params.id]);
     if (!collectionRows[0]) return res.status(404).json({ success: false, error: 'Quiz collection not found.' });
+    if (!collectionRows[0].comments_enabled) return res.status(403).json({ success: false, error: 'The creator has paused comments for this quiz.' });
+    const completed = (req.session.completedQuizCollections || []).map(String).includes(String(req.params.id));
+    if (!completed) return res.status(403).json({ success: false, error: 'Please play this quiz before posting a comment.' });
 
     const userId = req.session?.userId || null;
     let displayName, anonymousCode = null;
@@ -142,7 +178,7 @@ router.post('/:id/comments', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await db.query(`
-      SELECT c.id, c.title, c.description, c.cover_image, c.created_at, c.is_published, u.name AS creator_name,
+      SELECT c.id, c.title, c.description, c.cover_image, c.created_at, c.is_published, c.comments_enabled, c.comments_visible, u.name AS creator_name,
         (SELECT COUNT(*)::int FROM questions q WHERE q.collection_id = c.id) AS question_count
       FROM collections c JOIN users u ON u.id = c.user_id
       WHERE c.id = $1 AND c.is_published = TRUE

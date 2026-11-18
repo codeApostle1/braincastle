@@ -201,6 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${isLive ? 'Unpublish' : 'Publish'}
           </button>
           <button class="btn btn-secondary btn-sm btn-view-comments" data-id="${col.id}">💬 Comments</button>
+          <button class="btn btn-secondary btn-sm btn-copy-creator-link" data-id="${col.id}" title="Copy direct quiz link">🔗 Copy link</button>
           <button class="btn btn-secondary btn-sm btn-edit-col" data-id="${col.id}">
             ⚙ Edit
           </button>
@@ -211,6 +212,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             🗑
           </button>
         </div>
+        <section class="creator-comments-panel" hidden>
+          <div class="creator-comments-settings">
+            <label><input type="checkbox" class="creator-comments-enabled" ${col.comments_enabled === false ? '' : 'checked'}> Allow new comments</label>
+            <label><input type="checkbox" class="creator-comments-visible" ${col.comments_visible === false ? '' : 'checked'}> Show comments to players</label>
+            <button type="button" class="btn btn-secondary btn-sm btn-save-comment-settings">Save comment settings</button>
+          </div>
+          <div class="creator-comments-list" aria-live="polite">Open Comments to load feedback.</div>
+        </section>
       `;
 
       // Event Listeners for Card Actions
@@ -219,6 +228,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       card.querySelector('.btn-edit-col').addEventListener('click', () => openEditCollectionModal(col));
       card.querySelector('.btn-preview-col').addEventListener('click', () => openPreviewModal(col.id));
       card.querySelector('.btn-delete-col').addEventListener('click', () => openDeleteModal(col));
+      const commentsPanel = card.querySelector('.creator-comments-panel');
+      const commentsList = card.querySelector('.creator-comments-list');
+      card.querySelector('.btn-view-comments').addEventListener('click', async () => {
+        commentsPanel.hidden = !commentsPanel.hidden;
+        if (!commentsPanel.hidden) {
+          commentsList.textContent = 'Loading comments...';
+          try {
+            const result = await API.get('/api/collections/creator/' + encodeURIComponent(col.id) + '/comments');
+            commentsList.innerHTML = result.data.length ? result.data.map(item =>
+              '<article class="creator-comment-item"><strong>' + Utils.escapeHTML(item.display_name) +
+              '</strong><p>' + Utils.escapeHTML(item.comment_text) +
+              '</p><small>' + Utils.escapeHTML(new Date(item.created_at).toLocaleString()) +
+              '</small></article>').join('') : '<p>No comments have been posted yet.</p>';
+          } catch (error) { commentsList.textContent = error.message || 'Could not load comments.'; }
+        }
+      });
+      card.querySelector('.btn-save-comment-settings').addEventListener('click', async () => {
+        const commentsEnabled = card.querySelector('.creator-comments-enabled').checked;
+        const commentsVisible = card.querySelector('.creator-comments-visible').checked;
+        try {
+          await API.request('/api/collections/creator/' + encodeURIComponent(col.id) + '/comment-settings', {
+            method: 'PATCH', body: { commentsEnabled, commentsVisible }
+          });
+          col.comments_enabled = commentsEnabled;
+          col.comments_visible = commentsVisible;
+          Utils.showToast('Comment settings saved.', 'success');
+        } catch (error) { Utils.showToast(error.message || 'Could not save comment settings.', 'error'); }
+      });
+      card.querySelector('.btn-copy-creator-link').addEventListener('click', async () => {
+        const link = new URL('/quiz.html?collectionId=' + encodeURIComponent(col.id), window.location.origin).href;
+        try { await navigator.clipboard.writeText(link); Utils.showToast('Quiz link copied!', 'success'); }
+        catch (error) { window.prompt('Copy this quiz link:', link); }
+      });
 
       adminCollectionsList.appendChild(card);
     });

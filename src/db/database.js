@@ -45,6 +45,8 @@ async function initDatabase() {
         description TEXT,
         cover_image TEXT,
         is_published BOOLEAN NOT NULL DEFAULT FALSE,
+        comments_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        comments_visible BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -83,6 +85,8 @@ async function initDatabase() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
       ALTER TABLE collections ADD COLUMN IF NOT EXISTS category_id BIGINT REFERENCES categories(id) ON DELETE SET NULL;
+      ALTER TABLE collections ADD COLUMN IF NOT EXISTS comments_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE collections ADD COLUMN IF NOT EXISTS comments_visible BOOLEAN NOT NULL DEFAULT TRUE;
       CREATE INDEX IF NOT EXISTS idx_collections_user ON collections(user_id);
       CREATE INDEX IF NOT EXISTS idx_collections_published ON collections(is_published);
       CREATE INDEX IF NOT EXISTS idx_questions_collection ON questions(collection_id);
