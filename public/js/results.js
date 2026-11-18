@@ -98,6 +98,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = response.results;
       reviewItems = res.review || [];
       commentCollectionId = res.collection.id;
+      const resultCommentsList = document.getElementById('resultCommentsList');
+      try {
+        const publicComments = await API.get('/api/collections/' + encodeURIComponent(commentCollectionId) + '/comments');
+        if (publicComments.commentsHidden) {
+          resultCommentsList.textContent = 'The creator has chosen not to display comments publicly.';
+        } else {
+          resultCommentsList.innerHTML = publicComments.data.length ? publicComments.data.map(item =>
+            '<article class="result-comment-item"><strong>' + Utils.escapeHTML(item.display_name) +
+            '</strong><p>' + Utils.escapeHTML(item.comment_text) + '</p><small>' +
+            Utils.escapeHTML(new Date(item.created_at).toLocaleDateString()) + '</small></article>').join('') :
+            '<p>No comments yet. Play the quiz and share the first comment!</p>';
+        }
+      } catch (error) { resultCommentsList.textContent = 'Comments could not be loaded right now.'; }
       try {
         const collectionInfo = await API.get('/api/collections/' + encodeURIComponent(commentCollectionId));
         if (collectionInfo.data.comments_enabled === false) {
